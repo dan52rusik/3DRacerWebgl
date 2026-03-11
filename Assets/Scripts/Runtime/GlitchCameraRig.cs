@@ -4,7 +4,7 @@ namespace GlitchRacer
 {
     public class GlitchCameraRig : MonoBehaviour
     {
-        [SerializeField] private Vector3 followOffset = new(0f, 6.5f, -11f);
+        [SerializeField] private Vector3 followOffset = new(0f, 5.1f, -8.6f);
         [SerializeField] private float followLerp = 8f;
 
         private GlitchRacerGame game;
@@ -36,7 +36,7 @@ namespace GlitchRacer
             }
 
             transform.position = Vector3.Lerp(transform.position, target.position + followOffset, followLerp * Time.deltaTime);
-            transform.LookAt(target.position + Vector3.up * 1.25f);
+            transform.LookAt(target.position + Vector3.up * 0.9f);
 
             float roll = 0f;
             if (game != null && game.ControlsInverted)
@@ -58,7 +58,7 @@ namespace GlitchRacer
                 cachedCamera.fieldOfView = Mathf.Lerp(cachedCamera.fieldOfView, fovTarget, Time.deltaTime * 5f);
                 cachedCamera.backgroundColor = game != null && game.ControlsInverted
                     ? Color.Lerp(new Color(0.03f, 0.02f, 0.08f), new Color(0.08f, 0.2f, 0.16f), (Mathf.Sin(Time.time * 11f) + 1f) * 0.5f)
-                    : new Color(0.03f, 0.04f, 0.08f);
+                    : new Color(0.01f, 0.02f, 0.05f);
             }
         }
 

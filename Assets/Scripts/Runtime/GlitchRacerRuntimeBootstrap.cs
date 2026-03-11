@@ -1,9 +1,17 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace GlitchRacer
 {
     public static class GlitchRacerRuntimeBootstrap
     {
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void RegisterSceneCallbacks()
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void EnsureBootstrap()
         {
@@ -13,6 +21,11 @@ namespace GlitchRacer
             }
 
             BuildIntoCurrentScene(false);
+        }
+
+        private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            EnsureBootstrap();
         }
 
         public static GlitchRacerGame BuildIntoCurrentScene(bool clearScene)
@@ -54,6 +67,7 @@ namespace GlitchRacer
             }
 
             camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.fieldOfView = 68f;
 
             GlitchCameraRig rig = camera.GetComponent<GlitchCameraRig>();
             if (rig == null)
@@ -86,7 +100,7 @@ namespace GlitchRacer
         {
             GameObject playerRoot = GameObject.CreatePrimitive(PrimitiveType.Cube);
             playerRoot.name = "VirusCar";
-            playerRoot.transform.position = new Vector3(0f, 0.75f, 0f);
+            playerRoot.transform.position = new Vector3(0f, 0.95f, 0f);
             playerRoot.transform.localScale = new Vector3(1.8f, 1.1f, 3.2f);
             playerRoot.GetComponent<Renderer>().material.color = new Color(0.08f, 0.95f, 0.78f);
 
