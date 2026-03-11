@@ -61,6 +61,7 @@ namespace GlitchRacer
         public bool HasDrunkVision => glitchTimer > 0f && activeGlitch == GlitchType.DrunkVision;
         public bool HasDrugsTrip => glitchTimer > 0f && activeGlitch == GlitchType.DrugsTrip;
         public bool IsChapterRush => chapterRushTimer > 0f;
+        public bool IsRamCritical => State == SessionState.Playing && CurrentRam < 30f;
         public float ChapterRushTimeRemaining => chapterRushTimer;
         public float GlitchTimeRemaining => glitchTimer;
         public GlitchType ActiveGlitch => glitchTimer > 0f ? activeGlitch : GlitchType.None;

@@ -72,6 +72,11 @@ namespace GlitchRacer
                 DrawStaticNoise();
             }
 
+            if (game.IsRamCritical)
+            {
+                DrawCriticalRamOverlay();
+            }
+
             if (game.ActiveGlitch != GlitchRacerGame.GlitchType.None)
             {
                 Rect glitchRect = new Rect(24f, 150f, Mathf.Min(320f, Screen.width - 48f), 28f);
@@ -351,6 +356,21 @@ namespace GlitchRacer
             }
 
             GUI.color = Color.white;
+        }
+
+        private void DrawCriticalRamOverlay()
+        {
+            float pulse = (Mathf.Sin(Time.time * 12f) + 1f) * 0.5f;
+            GUI.color = new Color(1f, 0f, 0.15f, 0.08f + pulse * 0.15f);
+            GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), fillTexture);
+            GUI.color = Color.white;
+
+            if (Mathf.FloorToInt(Time.time * 8f) % 2 == 0)
+            {
+                GUI.color = new Color(1f, 0.15f, 0.25f, 0.95f);
+                GUI.Label(new Rect(0f, Screen.height * 0.28f, Screen.width, 60f), "CRITICAL SYSTEM INSTABILITY", centerStyle);
+                GUI.color = Color.white;
+            }
         }
 
         private void DrawDrugsOverlay()

@@ -80,6 +80,13 @@ namespace GlitchRacer
                     Mathf.Sin(Time.time * 3.6f) * 0.12f,
                     0f);
             }
+            else if (game != null && game.IsRamCritical)
+            {
+                transform.position += new Vector3(
+                    Mathf.Sin(Time.time * 50f) * 0.06f,
+                    Mathf.Cos(Time.time * 43f) * 0.06f,
+                    Mathf.Sin(Time.time * 37f) * 0.04f);
+            }
 
             transform.LookAt(lookTarget);
 
@@ -132,6 +139,10 @@ namespace GlitchRacer
                 {
                     fovTarget += Mathf.Sin(Time.time * 18f) * 0.8f;
                 }
+                else if (game != null && game.IsRamCritical)
+                {
+                    fovTarget += 2f + Mathf.Sin(Time.time * 15f) * 3f;
+                }
 
                 cachedCamera.fieldOfView = Mathf.Lerp(cachedCamera.fieldOfView, fovTarget, Time.deltaTime * 5f);
                 if (game != null && game.ControlsInverted)
@@ -163,6 +174,14 @@ namespace GlitchRacer
                 else
                 {
                     cachedCamera.backgroundColor = new Color(0.03f, 0.04f, 0.08f);
+                }
+
+                if (game != null && game.IsRamCritical)
+                {
+                    cachedCamera.backgroundColor = Color.Lerp(
+                        cachedCamera.backgroundColor,
+                        new Color(0.25f, 0.02f, 0.05f),
+                        (Mathf.Sin(Time.time * 8f) + 1f) * 0.5f);
                 }
             }
         }
