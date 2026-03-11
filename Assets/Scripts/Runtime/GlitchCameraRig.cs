@@ -63,8 +63,8 @@ namespace GlitchRacer
                 float fovTarget = baseFieldOfView + ((game != null && game.ControlsInverted) ? 10f : 0f) + ((game != null && game.IsMenuVisible) ? 6f : 0f);
                 cachedCamera.fieldOfView = Mathf.Lerp(cachedCamera.fieldOfView, fovTarget, Time.deltaTime * 5f);
                 cachedCamera.backgroundColor = game != null && game.ControlsInverted
-                    ? Color.Lerp(new Color(0.03f, 0.02f, 0.08f), new Color(0.08f, 0.2f, 0.16f), (Mathf.Sin(Time.time * 11f) + 1f) * 0.5f)
-                    : new Color(0.01f, 0.02f, 0.05f);
+                    ? Color.Lerp(new Color(0.06f, 0.04f, 0.12f), new Color(0.1f, 0.24f, 0.18f), (Mathf.Sin(Time.time * 11f) + 1f) * 0.5f)
+                    : new Color(0.03f, 0.04f, 0.08f);
             }
         }
 

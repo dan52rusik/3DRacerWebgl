@@ -95,21 +95,6 @@ namespace GlitchRacer
 
         private void CreateVoidFog(Transform parent, int currentSegmentIndex)
         {
-            GameObject haze = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            haze.name = "VoidFog";
-            haze.transform.SetParent(parent, false);
-            haze.transform.localPosition = new Vector3(0f, -8.5f, 0f);
-            haze.transform.localScale = new Vector3(34f, 0.2f, segmentLength * 1.35f);
-            ApplyColor(haze, Color.Lerp(new Color(0.03f, 0.01f, 0.08f), new Color(0.02f, 0.09f, 0.14f), (currentSegmentIndex % 2) * 0.35f));
-            RemoveCollider(haze);
-
-            GameObject riftCore = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            riftCore.name = "RiftCore";
-            riftCore.transform.SetParent(parent, false);
-            riftCore.transform.localPosition = new Vector3(0f, -12.5f, 0f);
-            riftCore.transform.localScale = new Vector3(16f, 0.08f, segmentLength * 0.9f);
-            ApplyColor(riftCore, new Color(0.02f, 0.45f, 0.7f));
-            RemoveCollider(riftCore);
         }
 
         private void CreateBridgeDeck(Transform parent, int currentSegmentIndex)
@@ -127,6 +112,14 @@ namespace GlitchRacer
             deck.transform.localScale = new Vector3(10.2f, 0.16f, segmentLength);
             ApplyColor(deck, hullColor);
             RemoveCollider(deck);
+
+            GameObject deckGlow = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            deckGlow.name = "DeckGlow";
+            deckGlow.transform.SetParent(parent, false);
+            deckGlow.transform.localPosition = new Vector3(0f, -0.04f, 0f);
+            deckGlow.transform.localScale = new Vector3(7.4f, 0.02f, segmentLength * 1.02f);
+            ApplyColor(deckGlow, new Color(0.11f, 0.14f, 0.2f));
+            RemoveCollider(deckGlow);
 
             GameObject undercarriage = GameObject.CreatePrimitive(PrimitiveType.Cube);
             undercarriage.name = "Undercarriage";
@@ -167,6 +160,14 @@ namespace GlitchRacer
                 centerLine.transform.localScale = new Vector3(0.42f, 0.015f, 0.65f);
                 ApplyColor(centerLine, centerAccent);
                 RemoveCollider(centerLine);
+
+                GameObject panelGlow = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                panelGlow.name = $"PanelGlow_{marker}";
+                panelGlow.transform.SetParent(parent, false);
+                panelGlow.transform.localPosition = new Vector3(0f, 0.04f, z);
+                panelGlow.transform.localScale = new Vector3(8.6f, 0.01f, 0.34f);
+                ApplyColor(panelGlow, new Color(0.16f, 0.2f, 0.3f));
+                RemoveCollider(panelGlow);
             }
 
             CreateBridgeSide(parent, -4.8f, leftAccent, "Left");
@@ -202,56 +203,48 @@ namespace GlitchRacer
 
         private void CreateBridgeSupports(Transform parent, int currentSegmentIndex)
         {
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 3; i++)
             {
-                float z = -segmentLength * 0.5f + 4f + i * 8f;
+                float z = -segmentLength * 0.5f + 5f + i * 10f;
 
                 GameObject crossbar = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 crossbar.name = $"Crossbar_{i}";
                 crossbar.transform.SetParent(parent, false);
-                crossbar.transform.localPosition = new Vector3(0f, -0.36f, z);
-                crossbar.transform.localScale = new Vector3(9.7f, 0.05f, 0.18f);
+                crossbar.transform.localPosition = new Vector3(0f, -0.42f, z);
+                crossbar.transform.localScale = new Vector3(8.2f, 0.05f, 0.14f);
                 ApplyColor(crossbar, new Color(0.05f, 0.07f, 0.11f));
                 RemoveCollider(crossbar);
 
                 for (int side = 0; side < 2; side++)
                 {
-                    float x = side == 0 ? -5.2f : 5.2f;
-                    GameObject sideRail = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    sideRail.name = $"SideRail_{i}_{side}";
-                    sideRail.transform.SetParent(parent, false);
-                    sideRail.transform.localPosition = new Vector3(x, 0.18f, z);
-                    sideRail.transform.localScale = new Vector3(0.08f, 0.44f, 0.18f);
-                    ApplyColor(sideRail, new Color(0.1f, 0.14f, 0.2f));
-                    RemoveCollider(sideRail);
+                    float x = side == 0 ? -3.8f : 3.8f;
 
-                    GameObject sideAccent = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    sideAccent.name = $"SideAccent_{i}_{side}";
-                    sideAccent.transform.SetParent(parent, false);
-                    sideAccent.transform.localPosition = new Vector3(x, 0.22f, z);
-                    sideAccent.transform.localScale = new Vector3(0.03f, 0.34f, 0.06f);
-                    ApplyColor(sideAccent, side == 0 ? new Color(0.08f, 0.95f, 1f) : new Color(1f, 0.24f, 0.7f));
-                    RemoveCollider(sideAccent);
+                    GameObject pylon = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    pylon.name = $"Pylon_{i}_{side}";
+                    pylon.transform.SetParent(parent, false);
+                    pylon.transform.localPosition = new Vector3(x, -3.9f, z);
+                    pylon.transform.localScale = new Vector3(0.26f, 7.2f, 0.26f);
+                    ApplyColor(pylon, new Color(0.05f, 0.06f, 0.1f));
+                    RemoveCollider(pylon);
 
-                    GameObject diagonal = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    diagonal.name = $"Diagonal_{i}_{side}";
-                    diagonal.transform.SetParent(parent, false);
-                    diagonal.transform.localPosition = new Vector3(x * 0.7f, -3.2f, z);
-                    diagonal.transform.localRotation = Quaternion.Euler(0f, 0f, side == 0 ? 22f : -22f);
-                    diagonal.transform.localScale = new Vector3(0.06f, 6.6f, 0.12f);
-                    ApplyColor(diagonal, new Color(0.04f, 0.05f, 0.09f));
-                    RemoveCollider(diagonal);
+                    GameObject pylonAccent = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    pylonAccent.name = $"PylonAccent_{i}_{side}";
+                    pylonAccent.transform.SetParent(parent, false);
+                    pylonAccent.transform.localPosition = new Vector3(x, -1.2f, z);
+                    pylonAccent.transform.localScale = new Vector3(0.04f, 1.6f, 0.04f);
+                    ApplyColor(pylonAccent, side == 0 ? new Color(0.08f, 0.95f, 1f) : new Color(1f, 0.24f, 0.7f));
+                    RemoveCollider(pylonAccent);
                 }
             }
         }
 
         private void CreateServerAbyss(Transform parent, int currentSegmentIndex)
         {
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 4; i++)
             {
                 float side = i % 2 == 0 ? -1f : 1f;
-                float x = Random.Range(8f, 16f) * side;
-                float y = Random.Range(-16f, -4f);
+                float x = Random.Range(5.6f, 7.6f) * side;
+                float y = Random.Range(1.6f, 3.9f);
                 float z = Random.Range(-segmentLength * 0.45f, segmentLength * 0.45f);
 
                 GameObject tower = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -259,29 +252,102 @@ namespace GlitchRacer
                 tower.transform.SetParent(parent, false);
                 tower.transform.localPosition = new Vector3(x, y, z);
                 tower.transform.localRotation = Quaternion.Euler(0f, Random.Range(0f, 45f), 0f);
-                tower.transform.localScale = new Vector3(Random.Range(1.1f, 2.6f), Random.Range(8f, 22f), Random.Range(1.1f, 2.6f));
+                tower.transform.localScale = new Vector3(Random.Range(2.3f, 4.2f), Random.Range(4.8f, 7.4f), Random.Range(2.3f, 4.2f));
                 ApplyColor(tower, i % 3 == 0 ? new Color(0.05f, 0.1f, 0.2f) : new Color(0.09f, 0.06f, 0.14f));
                 RemoveCollider(tower);
 
-                GameObject strip = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                strip.name = $"ServerLight_{i}";
-                strip.transform.SetParent(tower.transform, false);
-                strip.transform.localPosition = new Vector3(0f, 0f, tower.transform.localScale.z * 0.51f);
-                strip.transform.localScale = new Vector3(0.12f, 0.96f, 0.08f);
-                ApplyColor(strip, i % 2 == 0 ? new Color(0.08f, 0.95f, 1f) : new Color(1f, 0.24f, 0.72f));
-                RemoveCollider(strip);
+                AddWindows(parent, tower.transform.position, tower.transform.localScale, i);
+                AddTowerAccent(parent, tower.transform.position, tower.transform.localScale, i);
+                AddHoloBillboard(parent, x, y, z, i);
 
-                if ((i + currentSegmentIndex) % 3 == 0)
+                if ((i + currentSegmentIndex) % 2 == 0)
                 {
                     GameObject shaft = GameObject.CreatePrimitive(PrimitiveType.Cube);
                     shaft.name = $"DataShaft_{i}";
                     shaft.transform.SetParent(parent, false);
-                    shaft.transform.localPosition = new Vector3(x * 0.75f, -8f, z);
-                    shaft.transform.localScale = new Vector3(0.45f, 18f, 0.45f);
-                    ApplyColor(shaft, new Color(0.05f, 0.42f, 0.66f));
+                    shaft.transform.localPosition = new Vector3(x * 0.94f, 1.2f, z);
+                    shaft.transform.localScale = new Vector3(0.14f, 2.6f, 0.14f);
+                    ApplyColor(shaft, new Color(0.06f, 0.22f, 0.34f));
                     RemoveCollider(shaft);
                 }
             }
+        }
+
+        private void AddWindows(Transform parent, Vector3 towerPosition, Vector3 towerScale, int seed)
+        {
+            int rows = Mathf.Clamp(Mathf.RoundToInt(towerScale.y * 0.35f), 3, 6);
+            int columns = Random.Range(2, 3);
+            Color windowColor = seed % 2 == 0 ? new Color(0.09f, 0.95f, 1f) : new Color(1f, 0.34f, 0.82f);
+            float faceZ = towerScale.z * 0.5f + 0.03f;
+            float rowStep = towerScale.y / (rows + 1);
+
+            for (int row = 0; row < rows; row++)
+            {
+                for (int column = 0; column < columns; column++)
+                {
+                    if (Random.value < 0.35f)
+                    {
+                        continue;
+                    }
+
+                    GameObject window = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    window.name = $"Window_{row}_{column}";
+                    window.transform.SetParent(parent, false);
+
+                    float x = towerPosition.x + (column - ((columns - 1) * 0.5f)) * 0.45f;
+                    float y = towerPosition.y - (towerScale.y * 0.4f) + rowStep * (row + 1);
+                    float z = towerPosition.z + faceZ;
+                    window.transform.position = new Vector3(x, y, z);
+                    window.transform.localScale = new Vector3(0.14f, 0.24f, 0.03f);
+                    ApplyColor(window, Color.Lerp(windowColor, Color.white, Random.Range(0.05f, 0.2f)));
+                    RemoveCollider(window);
+                }
+            }
+        }
+
+        private void AddTowerAccent(Transform parent, Vector3 towerPosition, Vector3 towerScale, int seed)
+        {
+            GameObject strip = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            strip.name = $"ServerLight_{seed}";
+            strip.transform.SetParent(parent, false);
+            strip.transform.position = new Vector3(towerPosition.x, towerPosition.y, towerPosition.z + towerScale.z * 0.5f + 0.04f);
+            strip.transform.localScale = new Vector3(0.14f, Mathf.Min(4.2f, towerScale.y * 0.45f), 0.03f);
+            ApplyColor(strip, seed % 2 == 0 ? new Color(0.08f, 0.95f, 1f) : new Color(1f, 0.24f, 0.72f));
+            RemoveCollider(strip);
+        }
+
+        private void AddHoloBillboard(Transform parent, float towerX, float towerY, float towerZ, int seed)
+        {
+            if (Random.value < 0.7f)
+            {
+                return;
+            }
+
+            float side = Mathf.Sign(towerX);
+            GameObject pole = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            pole.name = $"BillboardPole_{seed}";
+            pole.transform.SetParent(parent, false);
+            pole.transform.localPosition = new Vector3(towerX + side * 1.1f, towerY + 2.2f, towerZ);
+            pole.transform.localScale = new Vector3(0.08f, 2.2f, 0.08f);
+            ApplyColor(pole, new Color(0.1f, 0.12f, 0.18f));
+            RemoveCollider(pole);
+
+            GameObject sign = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            sign.name = $"HoloSign_{seed}";
+            sign.transform.SetParent(parent, false);
+            sign.transform.localPosition = new Vector3(towerX + side * 1.5f, towerY + 3.3f, towerZ);
+            sign.transform.localRotation = Quaternion.Euler(Random.Range(-10f, 10f), side < 0 ? -18f : 18f, 0f);
+            sign.transform.localScale = new Vector3(Random.Range(0.7f, 1.05f), Random.Range(0.22f, 0.34f), 0.04f);
+            ApplyColor(sign, seed % 2 == 0 ? new Color(0.08f, 0.95f, 1f) : new Color(1f, 0.28f, 0.76f));
+            RemoveCollider(sign);
+
+            GameObject signCore = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            signCore.name = $"HoloSignCore_{seed}";
+            signCore.transform.SetParent(sign.transform, false);
+            signCore.transform.localPosition = Vector3.zero;
+            signCore.transform.localScale = new Vector3(0.82f, 0.72f, 1.1f);
+            ApplyColor(signCore, new Color(0.78f, 0.92f, 1f));
+            RemoveCollider(signCore);
         }
 
         private void CreateScanArches(Transform parent, int currentSegmentIndex)
