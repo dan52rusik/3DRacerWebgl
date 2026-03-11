@@ -68,7 +68,10 @@ namespace GlitchRacer
 
             if (game.ActiveGlitch != GlitchRacerGame.GlitchType.None)
             {
-                GUI.Label(new Rect(24f, 104f, 700f, 30f), $"GLITCH ACTIVE {game.GlitchTimeRemaining:0.0}s  |  {game.ActiveGlitchLabel}", labelStyle);
+                Rect glitchRect = new Rect(334f, 84f, Mathf.Min(360f, Screen.width - 560f), 32f);
+                DrawSoftCard(glitchRect, new Color(0.18f, 0.05f, 0.24f, 0.74f));
+                GUI.Label(new Rect(glitchRect.x + 12f, glitchRect.y + 6f, glitchRect.width - 24f, 20f),
+                    $"GLITCH {game.GlitchTimeRemaining:0.0}s  |  {game.ActiveGlitchLabel}", tinyStyle);
             }
 
             if (game.State == GlitchRacerGame.SessionState.Playing)
@@ -96,25 +99,33 @@ namespace GlitchRacer
 
         private void DrawTopBar()
         {
-            Rect header = new Rect(20f, 16f, Mathf.Min(720f, Screen.width - 40f), 128f);
-            DrawPanelChrome(header, new Color(0.01f, 0.03f, 0.06f, 0.84f), new Color(0.08f, 0.95f, 1f, 0.5f), new Color(1f, 0.24f, 0.72f, 0.25f));
+            Rect brandRect = new Rect(18f, 18f, 280f, 60f);
+            DrawSoftCard(brandRect, new Color(0.01f, 0.03f, 0.06f, 0.72f));
+            GUI.color = new Color(0.08f, 0.95f, 1f, 0.7f);
+            GUI.DrawTexture(new Rect(brandRect.x, brandRect.y, 3f, brandRect.height), fillTexture);
+            GUI.color = Color.white;
+            GUI.Label(new Rect(brandRect.x + 18f, brandRect.y + 6f, 244f, 38f), "GLITCH RACER", titleStyle);
 
-            GUI.Label(new Rect(header.x + 22f, header.y + 14f, 360f, 44f), "GLITCH RACER", heroStyle);
-            GUI.Label(new Rect(header.x + 24f, header.y + 58f, 160f, 22f), "SCORE", tinyStyle);
-            GUI.Label(new Rect(header.x + 24f, header.y + 76f, 180f, 30f), Mathf.RoundToInt(game.Score).ToString("N0"), metricStyle);
-            GUI.Label(new Rect(header.x + 188f, header.y + 58f, 160f, 22f), "DISTANCE", tinyStyle);
-            GUI.Label(new Rect(header.x + 188f, header.y + 76f, 180f, 30f), $"{Mathf.FloorToInt(game.CurrentDistance)} m", metricStyle);
+            Rect scoreRect = new Rect(18f, 86f, 146f, 60f);
+            DrawSoftCard(scoreRect, new Color(0.01f, 0.03f, 0.06f, 0.68f));
+            GUI.Label(new Rect(scoreRect.x + 12f, scoreRect.y + 6f, 100f, 16f), "SCORE", tinyStyle);
+            GUI.Label(new Rect(scoreRect.x + 12f, scoreRect.y + 24f, 120f, 26f), Mathf.RoundToInt(game.Score).ToString("N0"), metricStyle);
 
-            Rect ramPanel = new Rect(header.x + 348f, header.y + 56f, 238f, 46f);
-            DrawSoftCard(ramPanel, new Color(1f, 1f, 1f, 0.06f));
+            Rect distanceRect = new Rect(174f, 86f, 146f, 60f);
+            DrawSoftCard(distanceRect, new Color(0.01f, 0.03f, 0.06f, 0.68f));
+            GUI.Label(new Rect(distanceRect.x + 12f, distanceRect.y + 6f, 100f, 16f), "DISTANCE", tinyStyle);
+            GUI.Label(new Rect(distanceRect.x + 12f, distanceRect.y + 24f, 120f, 26f), $"{Mathf.FloorToInt(game.CurrentDistance)} m", metricStyle);
+
+            Rect ramPanel = new Rect(334f, 30f, Mathf.Min(290f, Screen.width - 570f), 46f);
+            DrawSoftCard(ramPanel, new Color(0.01f, 0.03f, 0.06f, 0.68f));
             GUI.Label(new Rect(ramPanel.x + 14f, ramPanel.y + 4f, 120f, 18f), "RAM STABILITY", tinyStyle);
-            Rect barRect = new Rect(ramPanel.x + 14f, ramPanel.y + 22f, 170f, 12f);
+            Rect barRect = new Rect(ramPanel.x + 14f, ramPanel.y + 23f, Mathf.Max(120f, ramPanel.width - 84f), 10f);
             GUI.color = new Color(1f, 1f, 1f, 0.16f);
             GUI.DrawTexture(barRect, fillTexture);
             GUI.color = new Color(0.26f, 1f, 0.45f);
             GUI.DrawTexture(new Rect(barRect.x, barRect.y, barRect.width * Mathf.Clamp01(game.CurrentRam / 100f), barRect.height), fillTexture);
             GUI.color = Color.white;
-            GUI.Label(new Rect(ramPanel.x + 192f, ramPanel.y + 16f, 80f, 20f), $"{Mathf.CeilToInt(game.CurrentRam)}%", labelStyle);
+            GUI.Label(new Rect(ramPanel.xMax - 62f, ramPanel.y + 11f, 54f, 20f), $"{Mathf.CeilToInt(game.CurrentRam)}%", labelStyle);
 
             Rect coinsCard = new Rect(Screen.width - 220f, 20f, 192f, 56f);
             DrawPanelChrome(coinsCard, new Color(0.02f, 0.04f, 0.07f, 0.86f), new Color(1f, 0.8f, 0.2f, 0.45f), new Color(1f, 1f, 1f, 0.06f));
