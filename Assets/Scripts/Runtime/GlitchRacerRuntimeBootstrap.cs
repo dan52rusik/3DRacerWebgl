@@ -1,0 +1,130 @@
+using UnityEngine;
+
+namespace GlitchRacer
+{
+    public static class GlitchRacerRuntimeBootstrap
+    {
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void EnsureBootstrap()
+        {
+            if (Object.FindFirstObjectByType<GlitchRacerGame>() != null)
+            {
+                return;
+            }
+
+            BuildIntoCurrentScene(false);
+        }
+
+        public static GlitchRacerGame BuildIntoCurrentScene(bool clearScene)
+        {
+#if UNITY_EDITOR
+            if (clearScene)
+            {
+                GameObject[] sceneObjects = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
+                for (int i = 0; i < sceneObjects.Length; i++)
+                {
+                    if (sceneObjects[i].transform.parent == null)
+                    {
+                        Object.DestroyImmediate(sceneObjects[i]);
+                    }
+                }
+            }
+#endif
+
+            GameObject root = new("GlitchRacerBootstrap");
+            GlitchRacerGame game = root.AddComponent<GlitchRacerGame>();
+            TrackSegmentSpawner spawner = root.AddComponent<TrackSegmentSpawner>();
+            GlitchRacerHud hud = root.AddComponent<GlitchRacerHud>();
+
+            Camera camera = Camera.main;
+            if (camera == null)
+            {
+                camera = Object.FindFirstObjectByType<Camera>();
+            }
+
+            if (camera == null)
+            {
+                camera = new GameObject("Main Camera").AddComponent<Camera>();
+            }
+
+            camera.tag = "MainCamera";
+            if (camera.GetComponent<AudioListener>() == null)
+            {
+                camera.gameObject.AddComponent<AudioListener>();
+            }
+
+            camera.clearFlags = CameraClearFlags.SolidColor;
+
+            GlitchCameraRig rig = camera.GetComponent<GlitchCameraRig>();
+            if (rig == null)
+            {
+                rig = camera.gameObject.AddComponent<GlitchCameraRig>();
+            }
+
+            if (Object.FindFirstObjectByType<Light>() == null)
+            {
+                GameObject lightObject = new("Directional Light");
+                Light light = lightObject.AddComponent<Light>();
+                light.type = LightType.Directional;
+                light.intensity = 1.1f;
+                light.color = new Color(0.55f, 0.73f, 1f);
+                light.transform.rotation = Quaternion.Euler(35f, -25f, 0f);
+            }
+
+            RunnerPlayer player = CreatePlayer();
+
+            spawner.Configure(game);
+            rig.Configure(game, player.transform);
+            hud.Configure(game);
+            player.Configure(game);
+            game.Configure(player, spawner, rig, hud);
+
+            return game;
+        }
+
+        private static RunnerPlayer CreatePlayer()
+        {
+            GameObject playerRoot = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            playerRoot.name = "VirusCar";
+            playerRoot.transform.position = new Vector3(0f, 0.75f, 0f);
+            playerRoot.transform.localScale = new Vector3(1.8f, 1.1f, 3.2f);
+            playerRoot.GetComponent<Renderer>().material.color = new Color(0.08f, 0.95f, 0.78f);
+
+            Rigidbody body = playerRoot.AddComponent<Rigidbody>();
+            body.isKinematic = true;
+            body.useGravity = false;
+
+            BoxCollider collider = playerRoot.GetComponent<BoxCollider>();
+            collider.size = new Vector3(0.95f, 0.95f, 0.95f);
+
+            GameObject cabin = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cabin.name = "Cabin";
+            cabin.transform.SetParent(playerRoot.transform, false);
+            cabin.transform.localPosition = new Vector3(0f, 0.55f, -0.1f);
+            cabin.transform.localScale = new Vector3(0.7f, 0.5f, 0.45f);
+            cabin.GetComponent<Renderer>().material.color = new Color(0.6f, 0.96f, 1f);
+            RemoveCollider(cabin);
+
+            return playerRoot.AddComponent<RunnerPlayer>();
+        }
+
+        private static void RemoveCollider(GameObject target)
+        {
+            Collider collider = target.GetComponent<Collider>();
+            if (collider == null)
+            {
+                return;
+            }
+
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+            {
+                Object.DestroyImmediate(collider);
+                return;
+            }
+#endif
+
+            Object.Destroy(collider);
+        }
+    }
+}
