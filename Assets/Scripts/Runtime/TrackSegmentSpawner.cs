@@ -42,46 +42,59 @@ namespace GlitchRacer
                 activeSegments[i].transform.position += Vector3.back * movement;
             }
 
-            if (activeSegments.Count > 0 && activeSegments[0].transform.position.z < -segmentLength * 1.5f)
+            GameObject firstSegment = activeSegments[0];
+            if (firstSegment.transform.position.z < -segmentLength * 1.5f)
             {
-                Destroy(activeSegments[0]);
                 activeSegments.RemoveAt(0);
-                SpawnSegment();
+
+                firstSegment.transform.position = new Vector3(0f, 0f, nextSpawnZ);
+
+                ClearSegmentEntities(firstSegment.transform);
+                PopulateSegment(firstSegment.transform, segmentIndex);
+
+                activeSegments.Add(firstSegment);
+
+                nextSpawnZ += segmentLength;
+                segmentIndex++;
             }
         }
 
         public void ResetTrack()
         {
-            for (int i = 0; i < activeSegments.Count; i++)
+            if (activeSegments.Count == 0)
             {
-                if (activeSegments[i] != null)
+                for (int i = 0; i < visibleSegments + 1; i++)
                 {
-                    Destroy(activeSegments[i]);
+                    GameObject segmentRoot = new($"TrackSegment_{i}");
+                    segmentRoot.transform.SetParent(transform, false);
+                    CreateTrackVisual(segmentRoot.transform, i);
+                    activeSegments.Add(segmentRoot);
                 }
             }
 
-            activeSegments.Clear();
             nextSpawnZ = 0f;
             segmentIndex = 0;
 
-            for (int i = 0; i < visibleSegments; i++)
+            for (int i = 0; i < activeSegments.Count; i++)
             {
-                SpawnSegment();
+                GameObject segment = activeSegments[i];
+                segment.transform.position = new Vector3(0f, 0f, nextSpawnZ);
+
+                ClearSegmentEntities(segment.transform);
+                PopulateSegment(segment.transform, segmentIndex);
+
+                nextSpawnZ += segmentLength;
+                segmentIndex++;
             }
         }
 
-        private void SpawnSegment()
+        private void ClearSegmentEntities(Transform segmentRoot)
         {
-            GameObject segmentRoot = new($"TrackSegment_{segmentIndex}");
-            segmentRoot.transform.SetParent(transform, false);
-            segmentRoot.transform.position = new Vector3(0f, 0f, nextSpawnZ);
-
-            CreateTrackVisual(segmentRoot.transform, segmentIndex);
-            PopulateSegment(segmentRoot.transform, segmentIndex);
-
-            activeSegments.Add(segmentRoot);
-            nextSpawnZ += segmentLength;
-            segmentIndex++;
+            TrackEntity[] entities = segmentRoot.GetComponentsInChildren<TrackEntity>();
+            for (int i = 0; i < entities.Length; i++)
+            {
+                Destroy(entities[i].gameObject);
+            }
         }
 
         private void CreateTrackVisual(Transform parent, int currentSegmentIndex)
