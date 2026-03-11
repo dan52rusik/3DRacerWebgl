@@ -1,10 +1,18 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GlitchRacer
 {
     public class GlitchRacerHud : MonoBehaviour
     {
         private GlitchRacerGame game;
+        private GameObject canvasRoot;
+        private Text scoreText;
+        private Text distanceText;
+        private Text ramText;
+        private Text coinsText;
+        private Text glitchText;
+        private Image ramFill;
         private Texture2D fillTexture;
         private GUIStyle labelStyle;
         private GUIStyle titleStyle;
@@ -15,10 +23,13 @@ namespace GlitchRacer
         private GUIStyle tinyStyle;
         private GUIStyle heroStyle;
         private GUIStyle metricStyle;
+        private GUIStyle upgradeTitleStyle;
+        private GUIStyle upgradeBodyStyle;
 
         public void Configure(GlitchRacerGame gameManager)
         {
             game = gameManager;
+            BuildCanvasHud();
         }
 
         private void Awake()
@@ -38,11 +49,6 @@ namespace GlitchRacer
             EnsureStyles();
 
             DrawBackdrop();
-
-            if (game.State == GlitchRacerGame.SessionState.Playing || game.State == GlitchRacerGame.SessionState.GameOver)
-            {
-                DrawTopBar();
-            }
 
             if (game.ControlsInverted)
             {
@@ -68,10 +74,10 @@ namespace GlitchRacer
 
             if (game.ActiveGlitch != GlitchRacerGame.GlitchType.None)
             {
-                Rect glitchRect = new Rect(334f, 84f, Mathf.Min(360f, Screen.width - 560f), 32f);
+                Rect glitchRect = new Rect(24f, 150f, Mathf.Min(320f, Screen.width - 48f), 28f);
                 DrawSoftCard(glitchRect, new Color(0.18f, 0.05f, 0.24f, 0.74f));
-                GUI.Label(new Rect(glitchRect.x + 12f, glitchRect.y + 6f, glitchRect.width - 24f, 20f),
-                    $"GLITCH {game.GlitchTimeRemaining:0.0}s  |  {game.ActiveGlitchLabel}", tinyStyle);
+                GUI.Label(new Rect(glitchRect.x + 10f, glitchRect.y + 5f, glitchRect.width - 20f, 18f),
+                    $"GLITCH {game.GlitchTimeRemaining:0.0}s | {game.ActiveGlitchLabel}", tinyStyle);
             }
 
             if (game.State == GlitchRacerGame.SessionState.Playing)
@@ -97,40 +103,191 @@ namespace GlitchRacer
             }
         }
 
-        private void DrawTopBar()
+        private void BuildCanvasHud()
         {
-            Rect brandRect = new Rect(18f, 18f, 280f, 60f);
-            DrawSoftCard(brandRect, new Color(0.01f, 0.03f, 0.06f, 0.72f));
-            GUI.color = new Color(0.08f, 0.95f, 1f, 0.7f);
-            GUI.DrawTexture(new Rect(brandRect.x, brandRect.y, 3f, brandRect.height), fillTexture);
-            GUI.color = Color.white;
-            GUI.Label(new Rect(brandRect.x + 18f, brandRect.y + 6f, 244f, 38f), "GLITCH RACER", titleStyle);
+            if (canvasRoot != null)
+            {
+                return;
+            }
 
-            Rect scoreRect = new Rect(18f, 86f, 146f, 60f);
-            DrawSoftCard(scoreRect, new Color(0.01f, 0.03f, 0.06f, 0.68f));
-            GUI.Label(new Rect(scoreRect.x + 12f, scoreRect.y + 6f, 100f, 16f), "SCORE", tinyStyle);
-            GUI.Label(new Rect(scoreRect.x + 12f, scoreRect.y + 24f, 120f, 26f), Mathf.RoundToInt(game.Score).ToString("N0"), metricStyle);
+            canvasRoot = new GameObject("GlitchCanvasHud");
+            canvasRoot.transform.SetParent(transform, false);
 
-            Rect distanceRect = new Rect(174f, 86f, 146f, 60f);
-            DrawSoftCard(distanceRect, new Color(0.01f, 0.03f, 0.06f, 0.68f));
-            GUI.Label(new Rect(distanceRect.x + 12f, distanceRect.y + 6f, 100f, 16f), "DISTANCE", tinyStyle);
-            GUI.Label(new Rect(distanceRect.x + 12f, distanceRect.y + 24f, 120f, 26f), $"{Mathf.FloorToInt(game.CurrentDistance)} m", metricStyle);
+            Canvas canvas = canvasRoot.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 100;
 
-            Rect ramPanel = new Rect(334f, 30f, Mathf.Min(290f, Screen.width - 570f), 46f);
-            DrawSoftCard(ramPanel, new Color(0.01f, 0.03f, 0.06f, 0.68f));
-            GUI.Label(new Rect(ramPanel.x + 14f, ramPanel.y + 4f, 120f, 18f), "RAM STABILITY", tinyStyle);
-            Rect barRect = new Rect(ramPanel.x + 14f, ramPanel.y + 23f, Mathf.Max(120f, ramPanel.width - 84f), 10f);
-            GUI.color = new Color(1f, 1f, 1f, 0.16f);
-            GUI.DrawTexture(barRect, fillTexture);
-            GUI.color = new Color(0.26f, 1f, 0.45f);
-            GUI.DrawTexture(new Rect(barRect.x, barRect.y, barRect.width * Mathf.Clamp01(game.CurrentRam / 100f), barRect.height), fillTexture);
-            GUI.color = Color.white;
-            GUI.Label(new Rect(ramPanel.xMax - 62f, ramPanel.y + 11f, 54f, 20f), $"{Mathf.CeilToInt(game.CurrentRam)}%", labelStyle);
+            CanvasScaler scaler = canvasRoot.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
 
-            Rect coinsCard = new Rect(Screen.width - 220f, 20f, 192f, 56f);
-            DrawPanelChrome(coinsCard, new Color(0.02f, 0.04f, 0.07f, 0.86f), new Color(1f, 0.8f, 0.2f, 0.45f), new Color(1f, 1f, 1f, 0.06f));
-            GUI.Label(new Rect(coinsCard.x + 16f, coinsCard.y + 8f, 120f, 16f), "WALLET", tinyStyle);
-            GUI.Label(new Rect(coinsCard.x + 16f, coinsCard.y + 24f, 156f, 26f), $"{game.Coins:N0}", metricStyle);
+            canvasRoot.AddComponent<GraphicRaycaster>();
+
+            CreateHudCard("BrandCard", new Vector2(24f, -24f), new Vector2(340f, 70f), new Color(0.01f, 0.03f, 0.06f, 0.78f), out RectTransform brandRect);
+            CreateAccent(brandRect, new Vector2(3f, -3f), new Vector2(3f, 64f), new Color(0.08f, 0.95f, 1f, 0.78f));
+            CreateCanvasText(brandRect, "BrandTitle", new Vector2(22f, -8f), new Vector2(280f, 44f), "GLITCH RACER", 44, TextAnchor.UpperLeft, out _);
+
+            CreateHudCard("ScoreCard", new Vector2(24f, -104f), new Vector2(180f, 70f), new Color(0.01f, 0.03f, 0.06f, 0.74f), out RectTransform scoreRect);
+            CreateCanvasText(scoreRect, "ScoreLabel", new Vector2(14f, -8f), new Vector2(120f, 16f), "SCORE", 16, TextAnchor.UpperLeft, out _);
+            CreateCanvasText(scoreRect, "ScoreValue", new Vector2(14f, -26f), new Vector2(146f, 28f), "0", 30, TextAnchor.UpperLeft, out scoreText);
+
+            CreateHudCard("DistanceCard", new Vector2(214f, -104f), new Vector2(180f, 70f), new Color(0.01f, 0.03f, 0.06f, 0.74f), out RectTransform distanceRect);
+            CreateCanvasText(distanceRect, "DistanceLabel", new Vector2(14f, -8f), new Vector2(120f, 16f), "DISTANCE", 16, TextAnchor.UpperLeft, out _);
+            CreateCanvasText(distanceRect, "DistanceValue", new Vector2(14f, -26f), new Vector2(146f, 28f), "0 m", 30, TextAnchor.UpperLeft, out distanceText);
+
+            CreateHudCard("RamCard", new Vector2(414f, -24f), new Vector2(380f, 60f), new Color(0.01f, 0.03f, 0.06f, 0.74f), out RectTransform ramRect);
+            CreateCanvasText(ramRect, "RamLabel", new Vector2(14f, -6f), new Vector2(180f, 16f), "RAM STABILITY", 16, TextAnchor.UpperLeft, out _);
+            CreateRamBar(ramRect);
+
+            CreateHudCard("CoinsCard", new Vector2(-24f, -24f), new Vector2(210f, 60f), new Color(0.02f, 0.04f, 0.07f, 0.8f), out RectTransform coinsRect, true);
+            CreateAccent(coinsRect, new Vector2(0f, -3f), new Vector2(3f, 54f), new Color(1f, 0.8f, 0.2f, 0.82f));
+            CreateCanvasText(coinsRect, "CoinsLabel", new Vector2(16f, -8f), new Vector2(120f, 16f), "WALLET", 16, TextAnchor.UpperLeft, out _);
+            CreateCanvasText(coinsRect, "CoinsValue", new Vector2(16f, -24f), new Vector2(150f, 24f), "0", 28, TextAnchor.UpperLeft, out coinsText);
+
+            CreateHudCard("GlitchCard", new Vector2(414f, -92f), new Vector2(380f, 40f), new Color(0.18f, 0.05f, 0.24f, 0.74f), out RectTransform glitchRect);
+            glitchRect.gameObject.SetActive(false);
+            CreateCanvasText(glitchRect, "GlitchValue", new Vector2(12f, -8f), new Vector2(352f, 20f), string.Empty, 16, TextAnchor.UpperLeft, out glitchText);
+        }
+
+        private void CreateRamBar(RectTransform parent)
+        {
+            GameObject bg = new GameObject("RamBarBackground", typeof(Image));
+            bg.transform.SetParent(parent, false);
+            Image bgImage = bg.GetComponent<Image>();
+            bgImage.color = new Color(1f, 1f, 1f, 0.16f);
+            RectTransform bgRect = bg.GetComponent<RectTransform>();
+            bgRect.anchorMin = new Vector2(0f, 1f);
+            bgRect.anchorMax = new Vector2(0f, 1f);
+            bgRect.pivot = new Vector2(0f, 1f);
+            bgRect.anchoredPosition = new Vector2(14f, -26f);
+            bgRect.sizeDelta = new Vector2(270f, 12f);
+
+            GameObject fill = new GameObject("RamBarFill", typeof(Image));
+            fill.transform.SetParent(bg.transform, false);
+            ramFill = fill.GetComponent<Image>();
+            ramFill.color = new Color(0.26f, 1f, 0.45f);
+            RectTransform fillRect = ramFill.rectTransform;
+            fillRect.anchorMin = new Vector2(0f, 0f);
+            fillRect.anchorMax = new Vector2(1f, 1f);
+            fillRect.offsetMin = new Vector2(0f, 0f);
+            fillRect.offsetMax = new Vector2(0f, 0f);
+
+            CreateCanvasText(parent, "RamValue", new Vector2(300f, -15f), new Vector2(64f, 22f), "100%", 22, TextAnchor.UpperRight, out ramText);
+        }
+
+        private void CreateHudCard(string name, Vector2 anchoredPosition, Vector2 size, Color color, out RectTransform rect, bool rightAligned = false)
+        {
+            GameObject card = new GameObject(name, typeof(Image));
+            card.transform.SetParent(canvasRoot.transform, false);
+            Image image = card.GetComponent<Image>();
+            image.color = color;
+
+            rect = card.GetComponent<RectTransform>();
+            if (rightAligned)
+            {
+                rect.anchorMin = new Vector2(1f, 1f);
+                rect.anchorMax = new Vector2(1f, 1f);
+                rect.pivot = new Vector2(1f, 1f);
+            }
+            else
+            {
+                rect.anchorMin = new Vector2(0f, 1f);
+                rect.anchorMax = new Vector2(0f, 1f);
+                rect.pivot = new Vector2(0f, 1f);
+            }
+
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = size;
+        }
+
+        private void CreateAccent(RectTransform parent, Vector2 anchoredPosition, Vector2 size, Color color)
+        {
+            GameObject accent = new GameObject("Accent", typeof(Image));
+            accent.transform.SetParent(parent, false);
+            Image image = accent.GetComponent<Image>();
+            image.color = color;
+            RectTransform rect = accent.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = size;
+        }
+
+        private void CreateCanvasText(RectTransform parent, string name, Vector2 anchoredPosition, Vector2 size, string initialText, int fontSize, TextAnchor alignment, out Text text)
+        {
+            GameObject textObj = new GameObject(name, typeof(Text));
+            textObj.transform.SetParent(parent, false);
+            text = textObj.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.text = initialText;
+            text.fontSize = fontSize;
+            text.fontStyle = FontStyle.Bold;
+            text.alignment = alignment;
+            text.color = Color.white;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            text.verticalOverflow = VerticalWrapMode.Overflow;
+
+            RectTransform rect = text.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = size;
+        }
+
+        private void Update()
+        {
+            if (game == null || canvasRoot == null)
+            {
+                return;
+            }
+
+            bool showHud = game.State == GlitchRacerGame.SessionState.Playing || game.State == GlitchRacerGame.SessionState.GameOver;
+            canvasRoot.SetActive(showHud);
+
+            if (!showHud)
+            {
+                return;
+            }
+
+            if (scoreText != null)
+            {
+                scoreText.text = Mathf.RoundToInt(game.Score).ToString("N0");
+            }
+
+            if (distanceText != null)
+            {
+                distanceText.text = $"{Mathf.FloorToInt(game.CurrentDistance)} m";
+            }
+
+            if (coinsText != null)
+            {
+                coinsText.text = game.Coins.ToString("N0");
+            }
+
+            if (ramFill != null)
+            {
+                float ramPercentage = Mathf.Clamp01(game.CurrentRam / 100f);
+                ramFill.rectTransform.anchorMax = new Vector2(ramPercentage, 1f);
+            }
+
+            if (ramText != null)
+            {
+                ramText.text = $"{Mathf.CeilToInt(game.CurrentRam)}%";
+            }
+
+            if (glitchText != null && glitchText.transform.parent != null)
+            {
+                bool showGlitch = game.ActiveGlitch != GlitchRacerGame.GlitchType.None;
+                glitchText.transform.parent.gameObject.SetActive(showGlitch);
+                if (showGlitch)
+                {
+                    glitchText.text = $"GLITCH {game.GlitchTimeRemaining:0.0}s | {game.ActiveGlitchLabel}";
+                }
+            }
         }
 
         private void DrawBackdrop()
@@ -140,12 +297,11 @@ namespace GlitchRacer
                 return;
             }
 
-            GUI.color = new Color(0.01f, 0.01f, 0.03f, 0.6f);
+            GUI.color = new Color(0.01f, 0.01f, 0.03f, 0.5f);
             GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), fillTexture);
-            GUI.color = new Color(0.05f, 0.55f, 0.7f, 0.05f);
-            GUI.DrawTexture(new Rect(-120f, 0f, Screen.width * 0.36f, Screen.height), fillTexture);
-            GUI.color = new Color(1f, 0.22f, 0.7f, 0.05f);
-            GUI.DrawTexture(new Rect(Screen.width * 0.72f, 0f, Screen.width * 0.34f, Screen.height), fillTexture);
+            GUI.color = new Color(0f, 0f, 0f, 0.18f);
+            GUI.DrawTexture(new Rect(0f, 0f, Screen.width * 0.18f, Screen.height), fillTexture);
+            GUI.DrawTexture(new Rect(Screen.width * 0.82f, 0f, Screen.width * 0.18f, Screen.height), fillTexture);
             GUI.color = Color.white;
         }
 
@@ -232,47 +388,48 @@ namespace GlitchRacer
 
         private void DrawMainMenu()
         {
-            Rect panel = new Rect(42f, 42f, Mathf.Min(560f, Screen.width * 0.44f), Screen.height - 84f);
-            DrawPanelChrome(panel, new Color(0.01f, 0.02f, 0.04f, 0.92f), new Color(0.08f, 0.95f, 1f, 0.45f), new Color(1f, 0.24f, 0.72f, 0.2f));
-            float buttonY = Mathf.Min(panel.y + 390f, panel.yMax - 188f);
+            float panelWidth = Mathf.Min(520f, Screen.width * 0.42f);
+            Rect panel = new Rect(36f, 34f, panelWidth, Screen.height - 68f);
+            DrawPanelChrome(panel, new Color(0.01f, 0.02f, 0.04f, 0.88f), new Color(0.08f, 0.95f, 1f, 0.26f), new Color(1f, 0.24f, 0.72f, 0.1f));
+            float buttonY = Mathf.Min(panel.y + 372f, panel.yMax - 160f);
 
             GUI.Label(new Rect(panel.x + 28f, panel.y + 22f, panel.width - 56f, 20f), "BROKEN DATA ABYSS // VIRUS RUNNER", tinyStyle);
-            GUI.Label(new Rect(panel.x + 28f, panel.y + 38f, panel.width - 56f, 50f), "GLITCH RACER", heroStyle);
-            GUI.Label(new Rect(panel.x + 28f, panel.y + 92f, panel.width - 56f, 78f), "Virus-car dives through a broken data abyss. Stack score, survive memory collapse, and convert the run into hard coins for permanent upgrades.", subStyle);
+            GUI.Label(new Rect(panel.x + 28f, panel.y + 38f, panel.width - 56f, 46f), "GLITCH RACER", heroStyle);
+            GUI.Label(new Rect(panel.x + 28f, panel.y + 90f, panel.width - 56f, 54f), "Dive through a broken data abyss, survive system glitches, and convert each run into permanent upgrades.", subStyle);
 
-            DrawStatChip(new Rect(panel.x + 28f, panel.y + 180f, panel.width - 56f, 42f), "WALLET", $"{game.Coins:N0} coins");
-            DrawStatChip(new Rect(panel.x + 28f, panel.y + 228f, panel.width - 56f, 42f), "BEST SCORE", Mathf.RoundToInt(game.BestScore).ToString("N0"));
-            DrawStatChip(new Rect(panel.x + 28f, panel.y + 276f, panel.width - 56f, 42f), "BEST DISTANCE", $"{Mathf.RoundToInt(game.BestDistance):N0} m");
-            DrawStatChip(new Rect(panel.x + 28f, panel.y + 324f, panel.width - 56f, 42f), "TOTAL DISTANCE", $"{Mathf.RoundToInt(game.TotalDistance):N0} m");
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 164f, panel.width - 56f, 44f), "WALLET", $"{game.Coins:N0} coins");
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 214f, panel.width - 56f, 44f), "BEST SCORE", Mathf.RoundToInt(game.BestScore).ToString("N0"));
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 264f, panel.width - 56f, 44f), "BEST DISTANCE", $"{Mathf.RoundToInt(game.BestDistance):N0} m");
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 314f, panel.width - 56f, 44f), "TOTAL DISTANCE", $"{Mathf.RoundToInt(game.TotalDistance):N0} m");
 
-            if (DrawActionButton(new Rect(panel.x + 28f, buttonY, panel.width - 56f, 50f), "Start Run", true))
+            if (DrawActionButton(new Rect(panel.x + 28f, buttonY, panel.width - 56f, 54f), "Start Run", true))
             {
                 game.StartGame();
             }
 
-            if (DrawActionButton(new Rect(panel.x + 28f, buttonY + 58f, panel.width - 56f, 46f), "Shop / Upgrades"))
+            if (DrawActionButton(new Rect(panel.x + 28f, buttonY + 64f, panel.width - 56f, 42f), "Shop / Upgrades"))
             {
                 game.OpenShop();
             }
 
-            if (DrawActionButton(new Rect(panel.x + 28f, buttonY + 112f, panel.width - 56f, 46f), "Settings"))
+            if (DrawActionButton(new Rect(panel.x + 28f, buttonY + 114f, panel.width - 56f, 42f), "Settings"))
             {
                 game.OpenSettings();
             }
 
-            Rect formula = new Rect(panel.x + 28f, panel.yMax - 86f, panel.width - 56f, 54f);
-            DrawSoftCard(formula, new Color(1f, 1f, 1f, 0.05f));
-            GUI.Label(new Rect(formula.x + 14f, formula.y + 8f, formula.width - 28f, 16f), "RUN PAYOUT", tinyStyle);
-            GUI.Label(new Rect(formula.x + 14f, formula.y + 22f, formula.width - 28f, 24f), "3.5 x shards + 0.03 x score + 0.12 x meters", subStyle);
+            Rect formula = new Rect(panel.x + 28f, panel.yMax - 70f, panel.width - 56f, 38f);
+            DrawSoftCard(formula, new Color(1f, 1f, 1f, 0.04f));
+            GUI.Label(new Rect(formula.x + 14f, formula.y + 4f, 120f, 14f), "RUN PAYOUT", tinyStyle);
+            GUI.Label(new Rect(formula.x + 14f, formula.y + 16f, formula.width - 28f, 16f), "3.5 x shards + 0.03 x score + 0.12 x meters", tinyStyle);
         }
 
         private void DrawShop()
         {
-            Rect panel = new Rect(Screen.width * 0.5f - 280f, 88f, 560f, 380f);
+            Rect panel = new Rect(Screen.width * 0.5f - 280f, 88f, 560f, 408f);
             DrawPanel(panel, "Shop");
 
             DrawUpgradeCard(
-                new Rect(panel.x + 20f, panel.y + 72f, panel.width - 40f, 104f),
+                new Rect(panel.x + 20f, panel.y + 76f, panel.width - 40f, 112f),
                 $"Fuel Efficiency Lv.{game.FuelUpgradeLevel}",
                 $"Reduces RAM drain by 8% per level.\nCurrent drain multiplier: x{game.FuelDrainMultiplier:0.00}",
                 $"Buy {game.FuelUpgradeCost}",
@@ -283,7 +440,7 @@ namespace GlitchRacer
             }
 
             DrawUpgradeCard(
-                new Rect(panel.x + 20f, panel.y + 190f, panel.width - 40f, 104f),
+                new Rect(panel.x + 20f, panel.y + 204f, panel.width - 40f, 112f),
                 $"Score Booster Lv.{game.ScoreUpgradeLevel}",
                 $"Boosts all score gains by 12% per level.\nCurrent score multiplier: x{game.ScoreMultiplier:0.00}",
                 $"Buy {game.ScoreUpgradeCost}",
@@ -293,7 +450,7 @@ namespace GlitchRacer
                 game.TryBuyScoreUpgrade();
             }
 
-            if (DrawActionButton(new Rect(panel.x + 20f, panel.y + panel.height - 62f, panel.width - 40f, 42f), "Back"))
+            if (DrawActionButton(new Rect(panel.x + 20f, panel.y + panel.height - 56f, panel.width - 40f, 40f), "Back"))
             {
                 game.CloseOverlayToMenu();
             }
@@ -346,7 +503,7 @@ namespace GlitchRacer
 
         private void DrawPanel(Rect panel, string title)
         {
-            DrawPanelChrome(panel, new Color(0.01f, 0.02f, 0.04f, 0.95f), new Color(0.08f, 0.95f, 1f, 0.42f), new Color(1f, 0.24f, 0.72f, 0.16f));
+            DrawPanelChrome(panel, new Color(0.01f, 0.02f, 0.04f, 0.97f), new Color(0.08f, 0.95f, 1f, 0.42f), new Color(1f, 0.24f, 0.72f, 0.16f));
             GUI.Label(new Rect(panel.x + 24f, panel.y + 22f, panel.width - 48f, 40f), title, centerStyle);
         }
 
@@ -355,11 +512,11 @@ namespace GlitchRacer
             GUI.color = bg;
             GUI.Box(rect, GUIContent.none, panelStyle);
             GUI.color = leftAccent;
-            GUI.DrawTexture(new Rect(rect.x, rect.y, 4f, rect.height), fillTexture);
+            GUI.DrawTexture(new Rect(rect.x, rect.y, 3f, rect.height), fillTexture);
             GUI.color = rightAccent;
-            GUI.DrawTexture(new Rect(rect.xMax - 4f, rect.y, 4f, rect.height), fillTexture);
-            GUI.color = new Color(1f, 1f, 1f, 0.06f);
-            GUI.DrawTexture(new Rect(rect.x + 10f, rect.y + 10f, rect.width - 20f, rect.height - 20f), fillTexture);
+            GUI.DrawTexture(new Rect(rect.xMax - 2f, rect.y, 2f, rect.height), fillTexture);
+            GUI.color = new Color(1f, 1f, 1f, 0.04f);
+            GUI.DrawTexture(new Rect(rect.x + 14f, rect.y + 14f, rect.width - 28f, rect.height - 28f), fillTexture);
             GUI.color = Color.white;
         }
 
@@ -374,9 +531,9 @@ namespace GlitchRacer
 
         private void DrawStatChip(Rect rect, string label, string value)
         {
-            DrawSoftCard(rect, new Color(1f, 1f, 1f, 0.05f));
-            GUI.Label(new Rect(rect.x + 14f, rect.y + 5f, 140f, 14f), label, tinyStyle);
-            GUI.Label(new Rect(rect.x + 14f, rect.y + 16f, rect.width - 28f, 20f), value, metricStyle);
+            DrawSoftCard(rect, new Color(1f, 1f, 1f, 0.045f));
+            GUI.Label(new Rect(rect.x + 14f, rect.y + 6f, 180f, 18f), label, tinyStyle);
+            GUI.Label(new Rect(rect.x + 14f, rect.y + 21f, rect.width - 28f, 18f), value, upgradeTitleStyle);
         }
 
         private bool DrawActionButton(Rect rect, string text, bool primary = false)
@@ -399,10 +556,16 @@ namespace GlitchRacer
 
         private void DrawUpgradeCard(Rect rect, string title, string description, string priceText, out Rect buttonRect)
         {
-            DrawSoftCard(rect, new Color(1f, 1f, 1f, 0.06f));
-            GUI.Label(new Rect(rect.x + 16f, rect.y + 10f, rect.width - 200f, 24f), title, labelStyle);
-            GUI.Label(new Rect(rect.x + 16f, rect.y + 38f, rect.width - 200f, 48f), description, subStyle);
-            buttonRect = new Rect(rect.x + rect.width - 170f, rect.y + 26f, 150f, 48f);
+            GUI.color = new Color(0.08f, 0.1f, 0.14f, 0.88f);
+            GUI.DrawTexture(rect, fillTexture);
+            GUI.color = new Color(1f, 1f, 1f, 0.06f);
+            GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width, 1f), fillTexture);
+            GUI.DrawTexture(new Rect(rect.x, rect.yMax - 1f, rect.width, 1f), fillTexture);
+            GUI.color = Color.white;
+
+            GUI.Label(new Rect(rect.x + 16f, rect.y + 14f, rect.width - 210f, 18f), title, upgradeTitleStyle);
+            GUI.Label(new Rect(rect.x + 16f, rect.y + 40f, rect.width - 210f, 42f), description, upgradeBodyStyle);
+            buttonRect = new Rect(rect.x + rect.width - 160f, rect.y + 28f, 140f, 42f);
             bool hovered = buttonRect.Contains(Event.current.mousePosition);
             GUI.color = hovered ? new Color(1f, 0.8f, 0.2f, 0.92f) : new Color(0.9f, 0.68f, 0.12f, 0.82f);
             GUI.DrawTexture(buttonRect, fillTexture);
@@ -433,7 +596,7 @@ namespace GlitchRacer
 
             heroStyle = new GUIStyle(labelStyle)
             {
-                fontSize = 42
+                fontSize = 38
             };
 
             centerStyle = new GUIStyle(labelStyle)
@@ -454,20 +617,30 @@ namespace GlitchRacer
 
             subStyle = new GUIStyle(labelStyle)
             {
-                fontSize = 17,
+                fontSize = 15,
                 wordWrap = true
             };
             subStyle.normal.textColor = new Color(0.82f, 0.88f, 0.94f);
 
             tinyStyle = new GUIStyle(labelStyle)
             {
-                fontSize = 11
+                fontSize = 10
             };
             tinyStyle.normal.textColor = new Color(0.56f, 0.76f, 0.88f);
 
             metricStyle = new GUIStyle(labelStyle)
             {
-                fontSize = 18
+                fontSize = 17
+            };
+
+            upgradeTitleStyle = new GUIStyle(labelStyle)
+            {
+                fontSize = 14
+            };
+
+            upgradeBodyStyle = new GUIStyle(subStyle)
+            {
+                fontSize = 11
             };
 
             panelStyle = new GUIStyle(GUI.skin.box);
