@@ -527,7 +527,16 @@ namespace GlitchRacer
         private void CreateGlitchPickup(Transform parent, float z)
         {
             int glitchLane = Random.Range(0, 3);
-            CreateEntity(parent, TrackEntityType.Glitch, 120f, glitchLane, z, PrimitiveType.Cube, new Vector3(1.4f, 1.4f, 1.4f), new Color(0.7f, 0.2f, 1f), 5f, 45f);
+            GlitchRacerGame.GlitchType glitchType = (GlitchRacerGame.GlitchType)Random.Range(1, 4);
+            Color glitchColor = glitchType switch
+            {
+                GlitchRacerGame.GlitchType.InvertControls => new Color(0.7f, 0.2f, 1f),
+                GlitchRacerGame.GlitchType.StaticNoise => new Color(1f, 0.94f, 0.38f),
+                GlitchRacerGame.GlitchType.DrunkVision => new Color(0.3f, 1f, 0.95f),
+                _ => new Color(0.7f, 0.2f, 1f)
+            };
+
+            CreateEntity(parent, TrackEntityType.Glitch, 120f, glitchLane, z, PrimitiveType.Cube, new Vector3(1.4f, 1.4f, 1.4f), glitchColor, 5f, 45f, glitchType);
 
             for (int lane = 0; lane < 3; lane++)
             {
@@ -548,7 +557,7 @@ namespace GlitchRacer
             }
         }
 
-        private void CreateEntity(Transform parent, TrackEntityType type, float amount, int lane, float z, PrimitiveType primitiveType, Vector3 scale, Color color, float glitchDuration = 5f, float yRotation = 0f)
+        private void CreateEntity(Transform parent, TrackEntityType type, float amount, int lane, float z, PrimitiveType primitiveType, Vector3 scale, Color color, float glitchDuration = 5f, float yRotation = 0f, GlitchRacerGame.GlitchType glitchType = GlitchRacerGame.GlitchType.InvertControls)
         {
             GameObject entity = GameObject.CreatePrimitive(primitiveType);
             entity.transform.SetParent(parent, false);
@@ -561,7 +570,7 @@ namespace GlitchRacer
             collider.isTrigger = true;
 
             TrackEntity trackEntity = entity.AddComponent<TrackEntity>();
-            trackEntity.Setup(type, amount, glitchDuration);
+            trackEntity.Setup(type, amount, glitchDuration, glitchType);
 
             entity.AddComponent<SpinPulse>();
         }

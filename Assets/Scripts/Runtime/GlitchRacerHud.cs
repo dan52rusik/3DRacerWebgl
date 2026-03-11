@@ -46,7 +46,21 @@ namespace GlitchRacer
                 GUI.color = new Color(0.8f, 0.2f, 1f, 0.18f);
                 GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), fillTexture);
                 GUI.color = Color.white;
-                GUI.Label(new Rect(24f, 104f, 600f, 30f), $"GLITCH ACTIVE {game.GlitchTimeRemaining:0.0}s  |  controls inverted", labelStyle);
+            }
+
+            if (game.HasDrunkVision)
+            {
+                DrawDrunkOverlay();
+            }
+
+            if (game.HasStaticNoise)
+            {
+                DrawStaticNoise();
+            }
+
+            if (game.ActiveGlitch != GlitchRacerGame.GlitchType.None)
+            {
+                GUI.Label(new Rect(24f, 104f, 700f, 30f), $"GLITCH ACTIVE {game.GlitchTimeRemaining:0.0}s  |  {game.ActiveGlitchLabel}", labelStyle);
             }
 
             if (game.State == GlitchRacerGame.SessionState.Playing)
@@ -99,6 +113,54 @@ namespace GlitchRacer
 
             GUI.color = new Color(0.01f, 0.01f, 0.03f, 0.3f);
             GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), fillTexture);
+            GUI.color = Color.white;
+        }
+
+        private void DrawStaticNoise()
+        {
+            GUI.color = new Color(1f, 1f, 1f, 0.06f);
+            GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), fillTexture);
+
+            int seed = Mathf.FloorToInt(Time.time * 60f);
+            Random.InitState(seed);
+            for (int i = 0; i < 110; i++)
+            {
+                float width = Random.Range(10f, 84f);
+                float height = Random.Range(4f, 20f);
+                float x = Random.Range(0f, Screen.width - width);
+                float y = Random.Range(0f, Screen.height - height);
+                float alpha = Random.Range(0.06f, 0.22f);
+
+                GUI.color = new Color(Random.value, Random.value, Random.value, alpha);
+                GUI.DrawTexture(new Rect(x, y, width, height), fillTexture);
+            }
+
+            for (int i = 0; i < 8; i++)
+            {
+                float bandY = Random.Range(0f, Screen.height);
+                float bandHeight = Random.Range(8f, 26f);
+                GUI.color = new Color(1f, 1f, 1f, Random.Range(0.05f, 0.12f));
+                GUI.DrawTexture(new Rect(0f, bandY, Screen.width, bandHeight), fillTexture);
+            }
+
+            GUI.color = Color.white;
+        }
+
+        private void DrawDrunkOverlay()
+        {
+            float sway = Mathf.Sin(Time.time * 2.5f) * 24f;
+            GUI.color = new Color(0.2f, 0.9f, 0.95f, 0.08f);
+            GUI.DrawTexture(new Rect(-60f + sway, 0f, Screen.width * 0.4f, Screen.height), fillTexture);
+            GUI.color = new Color(1f, 0.2f, 0.7f, 0.08f);
+            GUI.DrawTexture(new Rect(Screen.width * 0.62f - sway, 0f, Screen.width * 0.42f, Screen.height), fillTexture);
+
+            for (int i = 0; i < 4; i++)
+            {
+                float waveY = Screen.height * (0.18f + i * 0.2f) + Mathf.Sin(Time.time * (2f + i)) * 18f;
+                GUI.color = new Color(1f, 1f, 1f, 0.05f);
+                GUI.DrawTexture(new Rect(0f, waveY, Screen.width, 10f), fillTexture);
+            }
+
             GUI.color = Color.white;
         }
 

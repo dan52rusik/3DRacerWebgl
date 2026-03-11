@@ -15,14 +15,16 @@ namespace GlitchRacer
         [SerializeField] private TrackEntityType entityType;
         [SerializeField] private float amount = 10f;
         [SerializeField] private float glitchDuration = 5f;
+        [SerializeField] private GlitchRacerGame.GlitchType glitchType = GlitchRacerGame.GlitchType.InvertControls;
 
         private bool consumed;
 
-        public void Setup(TrackEntityType type, float value, float duration = 5f)
+        public void Setup(TrackEntityType type, float value, float duration = 5f, GlitchRacerGame.GlitchType appliedGlitch = GlitchRacerGame.GlitchType.InvertControls)
         {
             entityType = type;
             amount = value;
             glitchDuration = duration;
+            glitchType = appliedGlitch;
         }
 
         public void Consume(GlitchRacerGame game)
@@ -43,7 +45,7 @@ namespace GlitchRacer
                     game.AddRam(amount);
                     break;
                 case TrackEntityType.Glitch:
-                    game.TriggerGlitch(glitchDuration, amount);
+                    game.TriggerGlitch(glitchDuration, amount, glitchType);
                     break;
                 case TrackEntityType.Obstacle:
                     game.HitObstacle(amount);

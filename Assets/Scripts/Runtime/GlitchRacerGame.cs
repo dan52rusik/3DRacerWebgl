@@ -4,6 +4,14 @@ namespace GlitchRacer
 {
     public class GlitchRacerGame : MonoBehaviour
     {
+        public enum GlitchType
+        {
+            None,
+            InvertControls,
+            StaticNoise,
+            DrunkVision
+        }
+
         public enum SessionState
         {
             MainMenu,
@@ -43,8 +51,18 @@ namespace GlitchRacer
         public bool IsMenuVisible => State == SessionState.MainMenu || State == SessionState.Shop || State == SessionState.Settings;
         public bool IsInputEnabled => State == SessionState.Playing;
         public bool IsDemoMode => State != SessionState.Playing;
-        public bool ControlsInverted => glitchTimer > 0f;
+        public bool ControlsInverted => glitchTimer > 0f && activeGlitch == GlitchType.InvertControls;
+        public bool HasStaticNoise => glitchTimer > 0f && activeGlitch == GlitchType.StaticNoise;
+        public bool HasDrunkVision => glitchTimer > 0f && activeGlitch == GlitchType.DrunkVision;
         public float GlitchTimeRemaining => glitchTimer;
+        public GlitchType ActiveGlitch => glitchTimer > 0f ? activeGlitch : GlitchType.None;
+        public string ActiveGlitchLabel => ActiveGlitch switch
+        {
+            GlitchType.InvertControls => "controls inverted",
+            GlitchType.StaticNoise => "signal noise",
+            GlitchType.DrunkVision => "vision drifting",
+            _ => "stable"
+        };
         public float FuelDrainMultiplier => Mathf.Max(0.55f, 1f - (saveData.fuelUpgradeLevel * 0.08f));
         public float ScoreMultiplier => 1f + (saveData.scoreUpgradeLevel * 0.12f);
         public int FuelUpgradeLevel => saveData.fuelUpgradeLevel;
@@ -55,6 +73,7 @@ namespace GlitchRacer
         public int ScoreUpgradeCost => 140 + (saveData.scoreUpgradeLevel * 110);
 
         private float glitchTimer;
+        private GlitchType activeGlitch;
 
         public void Configure(RunnerPlayer playerController, TrackSegmentSpawner trackSpawner, GlitchCameraRig rig, GlitchRacerHud gameHud)
         {
@@ -112,7 +131,7 @@ namespace GlitchRacer
             }
         }
 
-        public void TriggerGlitch(float duration, float bonusScore)
+        public void TriggerGlitch(float duration, float bonusScore, GlitchType glitchType)
         {
             if (State != SessionState.Playing)
             {
@@ -120,8 +139,10 @@ namespace GlitchRacer
             }
 
             glitchTimer = Mathf.Max(glitchTimer, duration);
+            activeGlitch = glitchType;
             AddScore(bonusScore);
             AddRam(8f);
+            cameraRig?.Punch();
         }
 
         public void CollectDataShard(float value)
@@ -223,6 +244,7 @@ namespace GlitchRacer
             CurrentDistance = 0f;
             CollectedDataShards = 0;
             glitchTimer = 0f;
+            activeGlitch = GlitchType.None;
         }
 
         private void SimulateRun()
@@ -258,6 +280,10 @@ namespace GlitchRacer
             if (glitchTimer > 0f)
             {
                 glitchTimer = Mathf.Max(0f, glitchTimer - Time.deltaTime);
+                if (glitchTimer <= 0f)
+                {
+                    activeGlitch = GlitchType.None;
+                }
             }
         }
 

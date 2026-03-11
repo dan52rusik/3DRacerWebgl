@@ -42,12 +42,33 @@ namespace GlitchRacer
             }
 
             transform.position = Vector3.Lerp(transform.position, target.position + offset, followLerp * Time.deltaTime);
-            transform.LookAt(target.position + Vector3.up * 0.55f);
+            Vector3 lookTarget = target.position + Vector3.up * 0.55f;
+            if (game != null && game.HasDrunkVision)
+            {
+                lookTarget += new Vector3(
+                    Mathf.Sin(Time.time * 1.9f) * 1.15f,
+                    Mathf.Cos(Time.time * 2.6f) * 0.5f,
+                    0f);
+                transform.position += new Vector3(
+                    Mathf.Sin(Time.time * 2.2f) * 0.2f,
+                    Mathf.Sin(Time.time * 3.6f) * 0.12f,
+                    0f);
+            }
+
+            transform.LookAt(lookTarget);
 
             float roll = 0f;
             if (game != null && game.ControlsInverted)
             {
                 roll = Mathf.Sin(Time.time * 14f) * 18f;
+            }
+            else if (game != null && game.HasDrunkVision)
+            {
+                roll = Mathf.Sin(Time.time * 2.4f) * 10f + Mathf.Cos(Time.time * 1.35f) * 6f;
+            }
+            else if (game != null && game.HasStaticNoise)
+            {
+                roll = Mathf.Sin(Time.time * 30f) * 1.8f;
             }
 
             if (punch > 0f)
@@ -61,10 +82,32 @@ namespace GlitchRacer
             if (cachedCamera != null)
             {
                 float fovTarget = baseFieldOfView + ((game != null && game.ControlsInverted) ? 10f : 0f) + ((game != null && game.IsMenuVisible) ? 6f : 0f);
+                if (game != null && game.HasDrunkVision)
+                {
+                    fovTarget += 8f + Mathf.Sin(Time.time * 2.1f) * 3.5f;
+                }
+                else if (game != null && game.HasStaticNoise)
+                {
+                    fovTarget += Mathf.Sin(Time.time * 18f) * 0.8f;
+                }
+
                 cachedCamera.fieldOfView = Mathf.Lerp(cachedCamera.fieldOfView, fovTarget, Time.deltaTime * 5f);
-                cachedCamera.backgroundColor = game != null && game.ControlsInverted
-                    ? Color.Lerp(new Color(0.06f, 0.04f, 0.12f), new Color(0.1f, 0.24f, 0.18f), (Mathf.Sin(Time.time * 11f) + 1f) * 0.5f)
-                    : new Color(0.03f, 0.04f, 0.08f);
+                if (game != null && game.ControlsInverted)
+                {
+                    cachedCamera.backgroundColor = Color.Lerp(new Color(0.06f, 0.04f, 0.12f), new Color(0.1f, 0.24f, 0.18f), (Mathf.Sin(Time.time * 11f) + 1f) * 0.5f);
+                }
+                else if (game != null && game.HasDrunkVision)
+                {
+                    cachedCamera.backgroundColor = Color.Lerp(new Color(0.05f, 0.04f, 0.08f), new Color(0.08f, 0.08f, 0.15f), (Mathf.Sin(Time.time * 2.7f) + 1f) * 0.5f);
+                }
+                else if (game != null && game.HasStaticNoise)
+                {
+                    cachedCamera.backgroundColor = Color.Lerp(new Color(0.03f, 0.04f, 0.08f), new Color(0.07f, 0.07f, 0.07f), (Mathf.Sin(Time.time * 24f) + 1f) * 0.5f);
+                }
+                else
+                {
+                    cachedCamera.backgroundColor = new Color(0.03f, 0.04f, 0.08f);
+                }
             }
         }
 
