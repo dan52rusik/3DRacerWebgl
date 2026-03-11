@@ -12,6 +12,9 @@ namespace GlitchRacer
         private GUIStyle buttonStyle;
         private GUIStyle subStyle;
         private GUIStyle panelStyle;
+        private GUIStyle tinyStyle;
+        private GUIStyle heroStyle;
+        private GUIStyle metricStyle;
 
         public void Configure(GlitchRacerGame gameManager)
         {
@@ -79,12 +82,10 @@ namespace GlitchRacer
             }
             else if (game.State == GlitchRacerGame.SessionState.Shop)
             {
-                DrawMainMenu();
                 DrawShop();
             }
             else if (game.State == GlitchRacerGame.SessionState.Settings)
             {
-                DrawMainMenu();
                 DrawSettings();
             }
             else if (game.IsGameOver)
@@ -95,18 +96,30 @@ namespace GlitchRacer
 
         private void DrawTopBar()
         {
-            GUI.Label(new Rect(24f, 20f, 300f, 40f), "GLITCH RACER", titleStyle);
-            GUI.Label(new Rect(24f, 64f, 320f, 30f), $"Score: {Mathf.RoundToInt(game.Score):N0}", labelStyle);
-            GUI.Label(new Rect(24f, 98f, 320f, 30f), $"Distance: {Mathf.FloorToInt(game.CurrentDistance)} m", labelStyle);
+            Rect header = new Rect(20f, 16f, Mathf.Min(720f, Screen.width - 40f), 128f);
+            DrawPanelChrome(header, new Color(0.01f, 0.03f, 0.06f, 0.84f), new Color(0.08f, 0.95f, 1f, 0.5f), new Color(1f, 0.24f, 0.72f, 0.25f));
 
-            Rect barRect = new(250f, 100f, 260f, 24f);
-            GUI.color = new Color(1f, 1f, 1f, 0.2f);
+            GUI.Label(new Rect(header.x + 22f, header.y + 14f, 360f, 44f), "GLITCH RACER", heroStyle);
+            GUI.Label(new Rect(header.x + 24f, header.y + 58f, 160f, 22f), "SCORE", tinyStyle);
+            GUI.Label(new Rect(header.x + 24f, header.y + 76f, 180f, 30f), Mathf.RoundToInt(game.Score).ToString("N0"), metricStyle);
+            GUI.Label(new Rect(header.x + 188f, header.y + 58f, 160f, 22f), "DISTANCE", tinyStyle);
+            GUI.Label(new Rect(header.x + 188f, header.y + 76f, 180f, 30f), $"{Mathf.FloorToInt(game.CurrentDistance)} m", metricStyle);
+
+            Rect ramPanel = new Rect(header.x + 348f, header.y + 56f, 238f, 46f);
+            DrawSoftCard(ramPanel, new Color(1f, 1f, 1f, 0.06f));
+            GUI.Label(new Rect(ramPanel.x + 14f, ramPanel.y + 4f, 120f, 18f), "RAM STABILITY", tinyStyle);
+            Rect barRect = new Rect(ramPanel.x + 14f, ramPanel.y + 22f, 170f, 12f);
+            GUI.color = new Color(1f, 1f, 1f, 0.16f);
             GUI.DrawTexture(barRect, fillTexture);
             GUI.color = new Color(0.26f, 1f, 0.45f);
             GUI.DrawTexture(new Rect(barRect.x, barRect.y, barRect.width * Mathf.Clamp01(game.CurrentRam / 100f), barRect.height), fillTexture);
             GUI.color = Color.white;
-            GUI.Label(new Rect(520f, 98f, 180f, 30f), $"RAM {Mathf.CeilToInt(game.CurrentRam)}%", labelStyle);
-            GUI.Label(new Rect(Screen.width - 260f, 20f, 220f, 30f), $"Coins: {game.Coins:N0}", labelStyle);
+            GUI.Label(new Rect(ramPanel.x + 192f, ramPanel.y + 16f, 80f, 20f), $"{Mathf.CeilToInt(game.CurrentRam)}%", labelStyle);
+
+            Rect coinsCard = new Rect(Screen.width - 220f, 20f, 192f, 56f);
+            DrawPanelChrome(coinsCard, new Color(0.02f, 0.04f, 0.07f, 0.86f), new Color(1f, 0.8f, 0.2f, 0.45f), new Color(1f, 1f, 1f, 0.06f));
+            GUI.Label(new Rect(coinsCard.x + 16f, coinsCard.y + 8f, 120f, 16f), "WALLET", tinyStyle);
+            GUI.Label(new Rect(coinsCard.x + 16f, coinsCard.y + 24f, 156f, 26f), $"{game.Coins:N0}", metricStyle);
         }
 
         private void DrawBackdrop()
@@ -116,8 +129,12 @@ namespace GlitchRacer
                 return;
             }
 
-            GUI.color = new Color(0.01f, 0.01f, 0.03f, 0.3f);
+            GUI.color = new Color(0.01f, 0.01f, 0.03f, 0.6f);
             GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), fillTexture);
+            GUI.color = new Color(0.05f, 0.55f, 0.7f, 0.05f);
+            GUI.DrawTexture(new Rect(-120f, 0f, Screen.width * 0.36f, Screen.height), fillTexture);
+            GUI.color = new Color(1f, 0.22f, 0.7f, 0.05f);
+            GUI.DrawTexture(new Rect(Screen.width * 0.72f, 0f, Screen.width * 0.34f, Screen.height), fillTexture);
             GUI.color = Color.white;
         }
 
@@ -204,59 +221,68 @@ namespace GlitchRacer
 
         private void DrawMainMenu()
         {
-            Rect panel = new Rect(42f, 42f, Mathf.Min(520f, Screen.width * 0.42f), Screen.height - 84f);
-            GUI.color = new Color(0f, 0f, 0f, 0.55f);
-            GUI.Box(panel, GUIContent.none, panelStyle);
-            GUI.color = Color.white;
+            Rect panel = new Rect(42f, 42f, Mathf.Min(560f, Screen.width * 0.44f), Screen.height - 84f);
+            DrawPanelChrome(panel, new Color(0.01f, 0.02f, 0.04f, 0.92f), new Color(0.08f, 0.95f, 1f, 0.45f), new Color(1f, 0.24f, 0.72f, 0.2f));
+            float buttonY = Mathf.Min(panel.y + 390f, panel.yMax - 188f);
 
-            GUI.Label(new Rect(panel.x + 28f, panel.y + 28f, panel.width - 56f, 44f), "GLITCH RACER", titleStyle);
-            GUI.Label(new Rect(panel.x + 28f, panel.y + 82f, panel.width - 56f, 88f), "Virus-car dives through a broken data abyss. Collect shards, survive glitches, and turn score into coins for stronger runs.", subStyle);
+            GUI.Label(new Rect(panel.x + 28f, panel.y + 22f, panel.width - 56f, 20f), "BROKEN DATA ABYSS // VIRUS RUNNER", tinyStyle);
+            GUI.Label(new Rect(panel.x + 28f, panel.y + 38f, panel.width - 56f, 50f), "GLITCH RACER", heroStyle);
+            GUI.Label(new Rect(panel.x + 28f, panel.y + 92f, panel.width - 56f, 78f), "Virus-car dives through a broken data abyss. Stack score, survive memory collapse, and convert the run into hard coins for permanent upgrades.", subStyle);
 
-            GUI.Label(new Rect(panel.x + 28f, panel.y + 170f, panel.width - 56f, 30f), $"Wallet: {game.Coins:N0} coins", labelStyle);
-            GUI.Label(new Rect(panel.x + 28f, panel.y + 204f, panel.width - 56f, 30f), $"Best score: {Mathf.RoundToInt(game.BestScore):N0}", labelStyle);
-            GUI.Label(new Rect(panel.x + 28f, panel.y + 238f, panel.width - 56f, 30f), $"Best distance: {Mathf.RoundToInt(game.BestDistance):N0} m", labelStyle);
-            GUI.Label(new Rect(panel.x + 28f, panel.y + 272f, panel.width - 56f, 30f), $"Total distance: {Mathf.RoundToInt(game.TotalDistance):N0} m", labelStyle);
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 180f, panel.width - 56f, 42f), "WALLET", $"{game.Coins:N0} coins");
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 228f, panel.width - 56f, 42f), "BEST SCORE", Mathf.RoundToInt(game.BestScore).ToString("N0"));
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 276f, panel.width - 56f, 42f), "BEST DISTANCE", $"{Mathf.RoundToInt(game.BestDistance):N0} m");
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 324f, panel.width - 56f, 42f), "TOTAL DISTANCE", $"{Mathf.RoundToInt(game.TotalDistance):N0} m");
 
-            if (GUI.Button(new Rect(panel.x + 28f, panel.y + 334f, panel.width - 56f, 52f), "Start Run", buttonStyle))
+            if (DrawActionButton(new Rect(panel.x + 28f, buttonY, panel.width - 56f, 50f), "Start Run", true))
             {
                 game.StartGame();
             }
 
-            if (GUI.Button(new Rect(panel.x + 28f, panel.y + 398f, panel.width - 56f, 52f), "Shop / Upgrades", buttonStyle))
+            if (DrawActionButton(new Rect(panel.x + 28f, buttonY + 58f, panel.width - 56f, 46f), "Shop / Upgrades"))
             {
                 game.OpenShop();
             }
 
-            if (GUI.Button(new Rect(panel.x + 28f, panel.y + 462f, panel.width - 56f, 52f), "Settings", buttonStyle))
+            if (DrawActionButton(new Rect(panel.x + 28f, buttonY + 112f, panel.width - 56f, 46f), "Settings"))
             {
                 game.OpenSettings();
             }
 
-            GUI.Label(new Rect(panel.x + 28f, panel.yMax - 120f, panel.width - 56f, 90f),
-                $"Coin formula\n3.5 x shards + 0.03 x score + 0.12 x meters\nLeaderboard distance metric: meters traveled this run",
-                subStyle);
+            Rect formula = new Rect(panel.x + 28f, panel.yMax - 86f, panel.width - 56f, 54f);
+            DrawSoftCard(formula, new Color(1f, 1f, 1f, 0.05f));
+            GUI.Label(new Rect(formula.x + 14f, formula.y + 8f, formula.width - 28f, 16f), "RUN PAYOUT", tinyStyle);
+            GUI.Label(new Rect(formula.x + 14f, formula.y + 22f, formula.width - 28f, 24f), "3.5 x shards + 0.03 x score + 0.12 x meters", subStyle);
         }
 
         private void DrawShop()
         {
-            Rect panel = new Rect(Screen.width * 0.5f - 260f, 90f, 520f, 360f);
+            Rect panel = new Rect(Screen.width * 0.5f - 280f, 88f, 560f, 380f);
             DrawPanel(panel, "Shop");
 
-            GUI.Label(new Rect(panel.x + 24f, panel.y + 72f, panel.width - 48f, 30f), $"Fuel Efficiency Lv.{game.FuelUpgradeLevel}", labelStyle);
-            GUI.Label(new Rect(panel.x + 24f, panel.y + 104f, panel.width - 48f, 54f), $"Reduces RAM drain by 8% per level.\nCurrent drain multiplier: x{game.FuelDrainMultiplier:0.00}", subStyle);
-            if (GUI.Button(new Rect(panel.x + panel.width - 184f, panel.y + 84f, 160f, 44f), $"Buy {game.FuelUpgradeCost}", buttonStyle))
+            DrawUpgradeCard(
+                new Rect(panel.x + 20f, panel.y + 72f, panel.width - 40f, 104f),
+                $"Fuel Efficiency Lv.{game.FuelUpgradeLevel}",
+                $"Reduces RAM drain by 8% per level.\nCurrent drain multiplier: x{game.FuelDrainMultiplier:0.00}",
+                $"Buy {game.FuelUpgradeCost}",
+                out Rect fuelButtonRect);
+            if (GUI.Button(fuelButtonRect, GUIContent.none, GUIStyle.none))
             {
                 game.TryBuyFuelUpgrade();
             }
 
-            GUI.Label(new Rect(panel.x + 24f, panel.y + 186f, panel.width - 48f, 30f), $"Score Booster Lv.{game.ScoreUpgradeLevel}", labelStyle);
-            GUI.Label(new Rect(panel.x + 24f, panel.y + 218f, panel.width - 48f, 54f), $"Boosts all score gains by 12% per level.\nCurrent score multiplier: x{game.ScoreMultiplier:0.00}", subStyle);
-            if (GUI.Button(new Rect(panel.x + panel.width - 184f, panel.y + 198f, 160f, 44f), $"Buy {game.ScoreUpgradeCost}", buttonStyle))
+            DrawUpgradeCard(
+                new Rect(panel.x + 20f, panel.y + 190f, panel.width - 40f, 104f),
+                $"Score Booster Lv.{game.ScoreUpgradeLevel}",
+                $"Boosts all score gains by 12% per level.\nCurrent score multiplier: x{game.ScoreMultiplier:0.00}",
+                $"Buy {game.ScoreUpgradeCost}",
+                out Rect scoreButtonRect);
+            if (GUI.Button(scoreButtonRect, GUIContent.none, GUIStyle.none))
             {
                 game.TryBuyScoreUpgrade();
             }
 
-            if (GUI.Button(new Rect(panel.x + 24f, panel.y + panel.height - 62f, panel.width - 48f, 42f), "Back", buttonStyle))
+            if (DrawActionButton(new Rect(panel.x + 20f, panel.y + panel.height - 62f, panel.width - 40f, 42f), "Back"))
             {
                 game.CloseOverlayToMenu();
             }
@@ -267,19 +293,19 @@ namespace GlitchRacer
             Rect panel = new Rect(Screen.width * 0.5f - 240f, 110f, 480f, 300f);
             DrawPanel(panel, "Settings");
 
-            if (GUI.Button(new Rect(panel.x + 24f, panel.y + 78f, panel.width - 48f, 48f), $"Music: {(game.MusicEnabled ? "On" : "Off")}", buttonStyle))
+            if (DrawActionButton(new Rect(panel.x + 24f, panel.y + 78f, panel.width - 48f, 48f), $"Music: {(game.MusicEnabled ? "On" : "Off")}"))
             {
                 game.ToggleMusic();
             }
 
-            if (GUI.Button(new Rect(panel.x + 24f, panel.y + 140f, panel.width - 48f, 48f), $"SFX: {(game.SfxEnabled ? "On" : "Off")}", buttonStyle))
+            if (DrawActionButton(new Rect(panel.x + 24f, panel.y + 140f, panel.width - 48f, 48f), $"SFX: {(game.SfxEnabled ? "On" : "Off")}"))
             {
                 game.ToggleSfx();
             }
 
             GUI.Label(new Rect(panel.x + 24f, panel.y + 204f, panel.width - 48f, 42f), "Progress is saved automatically on every run end and purchase.", subStyle);
 
-            if (GUI.Button(new Rect(panel.x + 24f, panel.y + panel.height - 58f, panel.width - 48f, 40f), "Back", buttonStyle))
+            if (DrawActionButton(new Rect(panel.x + 24f, panel.y + panel.height - 58f, panel.width - 48f, 40f), "Back"))
             {
                 game.CloseOverlayToMenu();
             }
@@ -296,12 +322,12 @@ namespace GlitchRacer
             GUI.Label(new Rect(panel.x + 24f, panel.y + 172f, panel.width - 48f, 30f), $"Coins earned: +{game.LastRunCoinsReward:N0}", labelStyle);
             GUI.Label(new Rect(panel.x + 24f, panel.y + 214f, panel.width - 48f, 54f), "Leaderboard metric: run distance in meters. Use this when sending results to Yandex leaderboards.", subStyle);
 
-            if (GUI.Button(new Rect(panel.x + 24f, panel.y + panel.height - 64f, (panel.width - 60f) * 0.5f, 42f), "Run Again", buttonStyle))
+            if (DrawActionButton(new Rect(panel.x + 24f, panel.y + panel.height - 64f, (panel.width - 60f) * 0.5f, 42f), "Run Again", true))
             {
                 game.StartGame();
             }
 
-            if (GUI.Button(new Rect(panel.center.x + 6f, panel.y + panel.height - 64f, (panel.width - 60f) * 0.5f, 42f), "Main Menu", buttonStyle))
+            if (DrawActionButton(new Rect(panel.center.x + 6f, panel.y + panel.height - 64f, (panel.width - 60f) * 0.5f, 42f), "Main Menu"))
             {
                 game.EnterMainMenu();
             }
@@ -309,10 +335,70 @@ namespace GlitchRacer
 
         private void DrawPanel(Rect panel, string title)
         {
-            GUI.color = new Color(0f, 0f, 0f, 0.78f);
-            GUI.Box(panel, GUIContent.none, panelStyle);
-            GUI.color = Color.white;
+            DrawPanelChrome(panel, new Color(0.01f, 0.02f, 0.04f, 0.95f), new Color(0.08f, 0.95f, 1f, 0.42f), new Color(1f, 0.24f, 0.72f, 0.16f));
             GUI.Label(new Rect(panel.x + 24f, panel.y + 22f, panel.width - 48f, 40f), title, centerStyle);
+        }
+
+        private void DrawPanelChrome(Rect rect, Color bg, Color leftAccent, Color rightAccent)
+        {
+            GUI.color = bg;
+            GUI.Box(rect, GUIContent.none, panelStyle);
+            GUI.color = leftAccent;
+            GUI.DrawTexture(new Rect(rect.x, rect.y, 4f, rect.height), fillTexture);
+            GUI.color = rightAccent;
+            GUI.DrawTexture(new Rect(rect.xMax - 4f, rect.y, 4f, rect.height), fillTexture);
+            GUI.color = new Color(1f, 1f, 1f, 0.06f);
+            GUI.DrawTexture(new Rect(rect.x + 10f, rect.y + 10f, rect.width - 20f, rect.height - 20f), fillTexture);
+            GUI.color = Color.white;
+        }
+
+        private void DrawSoftCard(Rect rect, Color color)
+        {
+            GUI.color = color;
+            GUI.DrawTexture(rect, fillTexture);
+            GUI.color = new Color(1f, 1f, 1f, 0.08f);
+            GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width, 1f), fillTexture);
+            GUI.color = Color.white;
+        }
+
+        private void DrawStatChip(Rect rect, string label, string value)
+        {
+            DrawSoftCard(rect, new Color(1f, 1f, 1f, 0.05f));
+            GUI.Label(new Rect(rect.x + 14f, rect.y + 5f, 140f, 14f), label, tinyStyle);
+            GUI.Label(new Rect(rect.x + 14f, rect.y + 16f, rect.width - 28f, 20f), value, metricStyle);
+        }
+
+        private bool DrawActionButton(Rect rect, string text, bool primary = false)
+        {
+            bool hovered = rect.Contains(Event.current.mousePosition);
+            Color bg = primary
+                ? (hovered ? new Color(0.08f, 0.72f, 0.9f, 0.92f) : new Color(0.05f, 0.56f, 0.74f, 0.88f))
+                : (hovered ? new Color(1f, 1f, 1f, 0.16f) : new Color(1f, 1f, 1f, 0.08f));
+            Color accent = primary ? new Color(1f, 1f, 1f, 0.22f) : new Color(0.08f, 0.95f, 1f, 0.35f);
+
+            GUI.color = bg;
+            GUI.DrawTexture(rect, fillTexture);
+            GUI.color = accent;
+            GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width, 2f), fillTexture);
+            GUI.DrawTexture(new Rect(rect.x, rect.yMax - 2f, rect.width, 2f), fillTexture);
+            GUI.color = Color.white;
+            GUI.Label(rect, text, centerStyle);
+            return GUI.Button(rect, GUIContent.none, GUIStyle.none);
+        }
+
+        private void DrawUpgradeCard(Rect rect, string title, string description, string priceText, out Rect buttonRect)
+        {
+            DrawSoftCard(rect, new Color(1f, 1f, 1f, 0.06f));
+            GUI.Label(new Rect(rect.x + 16f, rect.y + 10f, rect.width - 200f, 24f), title, labelStyle);
+            GUI.Label(new Rect(rect.x + 16f, rect.y + 38f, rect.width - 200f, 48f), description, subStyle);
+            buttonRect = new Rect(rect.x + rect.width - 170f, rect.y + 26f, 150f, 48f);
+            bool hovered = buttonRect.Contains(Event.current.mousePosition);
+            GUI.color = hovered ? new Color(1f, 0.8f, 0.2f, 0.92f) : new Color(0.9f, 0.68f, 0.12f, 0.82f);
+            GUI.DrawTexture(buttonRect, fillTexture);
+            GUI.color = new Color(0f, 0f, 0f, 0.22f);
+            GUI.DrawTexture(new Rect(buttonRect.x, buttonRect.yMax - 3f, buttonRect.width, 3f), fillTexture);
+            GUI.color = Color.white;
+            GUI.Label(buttonRect, priceText, centerStyle);
         }
 
         private void EnsureStyles()
@@ -334,10 +420,15 @@ namespace GlitchRacer
                 fontSize = 34
             };
 
+            heroStyle = new GUIStyle(labelStyle)
+            {
+                fontSize = 42
+            };
+
             centerStyle = new GUIStyle(labelStyle)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = 28
+                fontSize = 24
             };
 
             buttonStyle = new GUIStyle(GUI.skin.button)
@@ -345,14 +436,32 @@ namespace GlitchRacer
                 fontSize = 22,
                 fontStyle = FontStyle.Bold
             };
+            buttonStyle.normal.background = null;
+            buttonStyle.hover.background = null;
+            buttonStyle.active.background = null;
+            buttonStyle.normal.textColor = Color.white;
 
             subStyle = new GUIStyle(labelStyle)
             {
-                fontSize = 18,
+                fontSize = 17,
                 wordWrap = true
+            };
+            subStyle.normal.textColor = new Color(0.82f, 0.88f, 0.94f);
+
+            tinyStyle = new GUIStyle(labelStyle)
+            {
+                fontSize = 11
+            };
+            tinyStyle.normal.textColor = new Color(0.56f, 0.76f, 0.88f);
+
+            metricStyle = new GUIStyle(labelStyle)
+            {
+                fontSize = 18
             };
 
             panelStyle = new GUIStyle(GUI.skin.box);
+            panelStyle.normal.background = null;
+            panelStyle.border = new RectOffset(0, 0, 0, 0);
         }
     }
 }
