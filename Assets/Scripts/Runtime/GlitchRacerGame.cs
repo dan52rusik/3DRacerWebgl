@@ -9,7 +9,8 @@ namespace GlitchRacer
             None,
             InvertControls,
             StaticNoise,
-            DrunkVision
+            DrunkVision,
+            DrugsTrip
         }
 
         public enum SessionState
@@ -54,6 +55,7 @@ namespace GlitchRacer
         public bool ControlsInverted => glitchTimer > 0f && activeGlitch == GlitchType.InvertControls;
         public bool HasStaticNoise => glitchTimer > 0f && activeGlitch == GlitchType.StaticNoise;
         public bool HasDrunkVision => glitchTimer > 0f && activeGlitch == GlitchType.DrunkVision;
+        public bool HasDrugsTrip => glitchTimer > 0f && activeGlitch == GlitchType.DrugsTrip;
         public float GlitchTimeRemaining => glitchTimer;
         public GlitchType ActiveGlitch => glitchTimer > 0f ? activeGlitch : GlitchType.None;
         public string ActiveGlitchLabel => ActiveGlitch switch
@@ -61,6 +63,7 @@ namespace GlitchRacer
             GlitchType.InvertControls => "controls inverted",
             GlitchType.StaticNoise => "signal noise",
             GlitchType.DrunkVision => "vision drifting",
+            GlitchType.DrugsTrip => "drugs trip",
             _ => "stable"
         };
         public float FuelDrainMultiplier => Mathf.Max(0.55f, 1f - (saveData.fuelUpgradeLevel * 0.08f));

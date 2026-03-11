@@ -53,6 +53,11 @@ namespace GlitchRacer
                 DrawDrunkOverlay();
             }
 
+            if (game.HasDrugsTrip)
+            {
+                DrawDrugsOverlay();
+            }
+
             if (game.HasStaticNoise)
             {
                 DrawStaticNoise();
@@ -161,6 +166,39 @@ namespace GlitchRacer
                 GUI.DrawTexture(new Rect(0f, waveY, Screen.width, 10f), fillTexture);
             }
 
+            GUI.color = Color.white;
+        }
+
+        private void DrawDrugsOverlay()
+        {
+            float pulse = (Mathf.Sin(Time.time * 3.2f) + 1f) * 0.5f;
+            float drift = Mathf.Sin(Time.time * 1.7f) * 42f;
+
+            GUI.color = new Color(1f, 0.1f, 0.7f, 0.11f + pulse * 0.06f);
+            GUI.DrawTexture(new Rect(-90f + drift, -10f, Screen.width * 0.52f, Screen.height + 20f), fillTexture);
+
+            GUI.color = new Color(0.12f, 1f, 0.86f, 0.1f + (1f - pulse) * 0.07f);
+            GUI.DrawTexture(new Rect(Screen.width * 0.52f - drift, -10f, Screen.width * 0.56f, Screen.height + 20f), fillTexture);
+
+            for (int i = 0; i < 6; i++)
+            {
+                float bandHeight = 10f + Mathf.Sin(Time.time * (2.5f + i * 0.3f)) * 6f;
+                float y = Screen.height * (0.1f + i * 0.14f) + Mathf.Cos(Time.time * (1.8f + i)) * 22f;
+                GUI.color = new Color(i % 2 == 0 ? 1f : 0.2f, i % 2 == 0 ? 0.2f : 1f, 0.95f, 0.06f);
+                GUI.DrawTexture(new Rect(-20f, y, Screen.width + 40f, bandHeight), fillTexture);
+            }
+
+            for (int i = 0; i < 12; i++)
+            {
+                float size = 24f + Mathf.PingPong(Time.time * (20f + i), 36f);
+                float x = Mathf.Repeat((i * 97f) + Time.time * (18f + i * 4f), Screen.width + 120f) - 60f;
+                float y = Screen.height * (0.08f + (i % 6) * 0.14f) + Mathf.Sin(Time.time * (1.3f + i)) * 18f;
+                GUI.color = new Color(i % 3 == 0 ? 1f : 0.2f, i % 3 == 1 ? 1f : 0.25f, 1f, 0.05f);
+                GUI.DrawTexture(new Rect(x, y, size, size * 0.26f), fillTexture);
+            }
+
+            GUI.color = new Color(1f, 1f, 1f, 0.05f);
+            GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), fillTexture);
             GUI.color = Color.white;
         }
 

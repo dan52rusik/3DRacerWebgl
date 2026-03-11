@@ -43,7 +43,18 @@ namespace GlitchRacer
 
             transform.position = Vector3.Lerp(transform.position, target.position + offset, followLerp * Time.deltaTime);
             Vector3 lookTarget = target.position + Vector3.up * 0.55f;
-            if (game != null && game.HasDrunkVision)
+            if (game != null && game.HasDrugsTrip)
+            {
+                lookTarget += new Vector3(
+                    Mathf.Sin(Time.time * 1.4f) * 1.95f,
+                    Mathf.Cos(Time.time * 3.8f) * 0.9f,
+                    Mathf.Sin(Time.time * 0.9f) * 0.35f);
+                transform.position += new Vector3(
+                    Mathf.Sin(Time.time * 2.8f) * 0.42f,
+                    Mathf.Sin(Time.time * 4.4f) * 0.24f,
+                    Mathf.Cos(Time.time * 1.8f) * 0.18f);
+            }
+            else if (game != null && game.HasDrunkVision)
             {
                 lookTarget += new Vector3(
                     Mathf.Sin(Time.time * 1.9f) * 1.15f,
@@ -61,6 +72,10 @@ namespace GlitchRacer
             if (game != null && game.ControlsInverted)
             {
                 roll = Mathf.Sin(Time.time * 14f) * 18f;
+            }
+            else if (game != null && game.HasDrugsTrip)
+            {
+                roll = Mathf.Sin(Time.time * 3.1f) * 16f + Mathf.Cos(Time.time * 1.7f) * 11f;
             }
             else if (game != null && game.HasDrunkVision)
             {
@@ -82,7 +97,11 @@ namespace GlitchRacer
             if (cachedCamera != null)
             {
                 float fovTarget = baseFieldOfView + ((game != null && game.ControlsInverted) ? 10f : 0f) + ((game != null && game.IsMenuVisible) ? 6f : 0f);
-                if (game != null && game.HasDrunkVision)
+                if (game != null && game.HasDrugsTrip)
+                {
+                    fovTarget += 13f + Mathf.Sin(Time.time * 2.7f) * 6f + Mathf.Cos(Time.time * 1.5f) * 2.5f;
+                }
+                else if (game != null && game.HasDrunkVision)
                 {
                     fovTarget += 8f + Mathf.Sin(Time.time * 2.1f) * 3.5f;
                 }
@@ -95,6 +114,13 @@ namespace GlitchRacer
                 if (game != null && game.ControlsInverted)
                 {
                     cachedCamera.backgroundColor = Color.Lerp(new Color(0.06f, 0.04f, 0.12f), new Color(0.1f, 0.24f, 0.18f), (Mathf.Sin(Time.time * 11f) + 1f) * 0.5f);
+                }
+                else if (game != null && game.HasDrugsTrip)
+                {
+                    cachedCamera.backgroundColor = Color.Lerp(
+                        new Color(0.12f, 0.04f, 0.16f),
+                        new Color(0.02f, 0.24f, 0.19f),
+                        (Mathf.Sin(Time.time * 4.2f) + 1f) * 0.5f);
                 }
                 else if (game != null && game.HasDrunkVision)
                 {

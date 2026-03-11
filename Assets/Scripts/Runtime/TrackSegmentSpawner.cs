@@ -527,16 +527,18 @@ namespace GlitchRacer
         private void CreateGlitchPickup(Transform parent, float z)
         {
             int glitchLane = Random.Range(0, 3);
-            GlitchRacerGame.GlitchType glitchType = (GlitchRacerGame.GlitchType)Random.Range(1, 4);
+            GlitchRacerGame.GlitchType glitchType = (GlitchRacerGame.GlitchType)Random.Range(1, 5);
             Color glitchColor = glitchType switch
             {
                 GlitchRacerGame.GlitchType.InvertControls => new Color(0.7f, 0.2f, 1f),
                 GlitchRacerGame.GlitchType.StaticNoise => new Color(1f, 0.94f, 0.38f),
                 GlitchRacerGame.GlitchType.DrunkVision => new Color(0.3f, 1f, 0.95f),
+                GlitchRacerGame.GlitchType.DrugsTrip => new Color(1f, 0.34f, 0.92f),
                 _ => new Color(0.7f, 0.2f, 1f)
             };
 
-            CreateEntity(parent, TrackEntityType.Glitch, 120f, glitchLane, z, PrimitiveType.Cube, new Vector3(1.4f, 1.4f, 1.4f), glitchColor, 5f, 45f, glitchType);
+            float duration = 15f;
+            CreateEntity(parent, TrackEntityType.Glitch, 120f, glitchLane, z, PrimitiveType.Cube, new Vector3(1.4f, 1.4f, 1.4f), glitchColor, duration, 45f, glitchType);
 
             for (int lane = 0; lane < 3; lane++)
             {
