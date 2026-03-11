@@ -575,7 +575,10 @@ MonoBehaviour:
     - line: '|     m_BuildTarget: Android'
     - line: '|     m_EncodingQuality: 1'
     - line: '|   m_BuildTargetGroupHDRCubemapEncodingQuality: []'
-    - line: '|   m_BuildTargetGroupLightmapSettings: []'
+    - line: '|   m_BuildTargetGroupLightmapSettings:'
+    - line: '|   - m_BuildTarget: WebGL'
+    - line: '|     m_TextureStreamingEnabled: 0'
+    - line: '|     m_TextureStreamingPriority: 0'
     - line: '|   m_BuildTargetGroupLoadStoreDebugModeSettings: []'
     - line: '|   m_BuildTargetNormalMapEncoding:'
     - line: '|   - m_BuildTarget: Android'
@@ -584,6 +587,9 @@ MonoBehaviour:
     - line: '|   - serializedVersion: 3'
     - line: '|     m_BuildTarget: Android'
     - line: '|     m_Formats: 03000000'
+    - line: '|   - serializedVersion: 3'
+    - line: '|     m_BuildTarget: WebGL'
+    - line: '|     m_Formats: 05000000'
     - line: '|   playModeTestRunnerEnabled: 0'
     - line: '|   runPlayModeTestAsEditModeTest: 0'
     - line: '|   actionOnDotNetUnhandledException: 1'
@@ -823,21 +829,21 @@ MonoBehaviour:
     - line: '|   spritePackerPolicy: '
     - line: '|   webGLMemorySize: 32'
     - line: '|   webGLExceptionSupport: 2'
-    - line: '|   webGLNameFilesAsHashes: 0'
+    - line: '|   webGLNameFilesAsHashes: 1'
     - line: '|   webGLShowDiagnostics: 0'
-    - line: '|   webGLDataCaching: 0'
+    - line: '|   webGLDataCaching: 1'
     - line: '|   webGLDebugSymbols: 0'
     - line: '|   webGLEmscriptenArgs: '
     - line: '|   webGLModulesDirectory: '
     - line: '|   webGLTemplate: PROJECT:YandexGames'
     - line: '|   webGLAnalyzeBuildSize: 0'
     - line: '|   webGLUseEmbeddedResources: 0'
-    - line: '|   webGLCompressionFormat: 2'
+    - line: '|   webGLCompressionFormat: 1'
     - line: '|   webGLWasmArithmeticExceptions: 0'
     - line: '|   webGLLinkerTarget: 1'
     - line: '|   webGLThreadsSupport: 0'
     - line: '|   webGLDecompressionFallback: 0'
-    - line: '|   webGLInitialMemorySize: 32'
+    - line: '|   webGLInitialMemorySize: 128'
     - line: '|   webGLMaximumMemorySize: 2048'
     - line: '|   webGLMemoryGrowthMode: 2'
     - line: '|   webGLMemoryLinearGrowthStep: 16'
@@ -866,7 +872,7 @@ MonoBehaviour:
     - line: '|   scriptingBackend:'
     - line: '|     Android: 1'
     - line: '|   il2cppCompilerConfiguration:'
-    - line: '|     WebGL: 0'
+    - line: '|     WebGL: 1'
     - line: '|   il2cppCodeGeneration:'
     - line: '|     WebGL: 1'
     - line: '|   il2cppStacktraceInformation: {}'
@@ -987,7 +993,7 @@ MonoBehaviour:
     - rid: 8642380452153786624
       type: {class: WebGLPlatformSettings, ns: UnityEditor.WebGL, asm: UnityEditor.WebGL.Extensions}
       data:
-        m_Development: 1
+        m_Development: 0
         m_ConnectProfiler: 0
         m_BuildWithDeepProfilingSupport: 0
         m_AllowDebugging: 0

@@ -75,6 +75,11 @@ namespace GlitchRacer
                 rig = camera.gameObject.AddComponent<GlitchCameraRig>();
             }
 
+            if (camera.GetComponent<AdaptiveRenderScale>() == null)
+            {
+                camera.gameObject.AddComponent<AdaptiveRenderScale>();
+            }
+
             if (Object.FindFirstObjectByType<Light>() == null)
             {
                 GameObject lightObject = new("Directional Light");
@@ -142,6 +147,99 @@ namespace GlitchRacer
 #endif
 
             Object.Destroy(collider);
+        }
+    }
+
+    public class AdaptiveRenderScale : MonoBehaviour
+    {
+        [SerializeField] private float desktopScale = 1f;
+        [SerializeField] private float mobileMinScale = 0.72f;
+        [SerializeField] private float mobileMaxScale = 0.92f;
+        [SerializeField] private float upscaleFps = 58f;
+        [SerializeField] private float downscaleFps = 52f;
+        [SerializeField] private float sampleDuration = 1f;
+
+        private float currentScale = 1f;
+        private float targetMaxScale = 1f;
+        private float sampleTimer;
+        private float averageDelta = 1f / 60f;
+
+        private void OnEnable()
+        {
+            targetMaxScale = ComputeTargetMaxScale();
+            currentScale = targetMaxScale;
+            ApplyScale();
+        }
+
+        private void Update()
+        {
+            float dt = Mathf.Clamp(Time.unscaledDeltaTime, 0.0001f, 0.1f);
+            averageDelta = Mathf.Lerp(averageDelta, dt, 0.08f);
+            sampleTimer += dt;
+
+            if (sampleTimer < sampleDuration)
+            {
+                return;
+            }
+
+            sampleTimer = 0f;
+            float fps = 1f / averageDelta;
+
+            if (fps < downscaleFps)
+            {
+                currentScale = Mathf.Max(mobileMinScale, currentScale - 0.05f);
+                ApplyScale();
+            }
+            else if (fps > upscaleFps)
+            {
+                currentScale = Mathf.Min(targetMaxScale, currentScale + 0.04f);
+                ApplyScale();
+            }
+        }
+
+        private float ComputeTargetMaxScale()
+        {
+            if (!IsMobileLikeDevice())
+            {
+                return desktopScale;
+            }
+
+            int longestSide = Mathf.Max(Screen.width, Screen.height);
+            if (longestSide >= 1440)
+            {
+                return 0.78f;
+            }
+
+            if (longestSide >= 1080)
+            {
+                return 0.84f;
+            }
+
+            if (longestSide >= 900)
+            {
+                return 0.9f;
+            }
+
+            return mobileMaxScale;
+        }
+
+        private static bool IsMobileLikeDevice()
+        {
+            if (Application.isMobilePlatform)
+            {
+                return true;
+            }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+            return Screen.width < 1100 || Screen.height < 1100;
+#else
+            return false;
+#endif
+        }
+
+        private void ApplyScale()
+        {
+            ScalableBufferManager.ResizeBuffers(currentScale, currentScale);
         }
     }
 }

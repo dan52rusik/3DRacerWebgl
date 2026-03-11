@@ -10,6 +10,8 @@ namespace GlitchRacer
         [SerializeField] private float laneOffset = 4f;
 
         private readonly List<GameObject> activeSegments = new();
+        private Material glowMaterial;
+        private Texture2D generatedGlowTexture;
         private GlitchRacerGame game;
         private float nextSpawnZ;
         private int segmentIndex;
@@ -212,6 +214,8 @@ namespace GlitchRacer
             edgeGlow.transform.localScale = new Vector3(0.06f, 0.62f, segmentLength * 1.01f);
             ApplyColor(edgeGlow, accent);
             RemoveCollider(edgeGlow);
+
+            CreateGlowBox(parent, $"{sideName}FakeGlow", new Vector3(sideX * 0.94f, 0.54f, 0f), new Vector3(0.28f, 0.44f, segmentLength * 1.02f), new Color(accent.r, accent.g, accent.b, 0.16f));
         }
 
         private void CreateBridgeSupports(Transform parent, int currentSegmentIndex)
@@ -438,6 +442,7 @@ namespace GlitchRacer
             innerTopGlow.transform.localScale = new Vector3(9.6f, 0.06f, 0.12f);
             ApplyColor(innerTopGlow, new Color(0.68f, 0.88f, 1f));
             RemoveCollider(innerTopGlow);
+            CreateGlowBox(archRoot.transform, "ScanArchHalo", new Vector3(0f, 5.1f, 0f), new Vector3(9.8f, 0.28f, 0.42f), new Color(0.3f, 0.85f, 1f, 0.12f));
 
             GameObject signBody = GameObject.CreatePrimitive(PrimitiveType.Cube);
             signBody.name = "ArchBillboard";
@@ -462,6 +467,7 @@ namespace GlitchRacer
             signCore.transform.localScale = new Vector3(0.88f, 0.74f, 0.72f);
             ApplyColor(signCore, new Color(0.78f, 0.92f, 1f));
             RemoveCollider(signCore);
+            CreateGlowBox(archRoot.transform, "ArchBillboardGlow", new Vector3(0f, 5.64f, 0f), new Vector3(4.4f, 1.1f, 0.22f), new Color(0.24f, 0.88f, 1f, 0.16f));
 
             GameObject leftBracket = GameObject.CreatePrimitive(PrimitiveType.Cube);
             leftBracket.name = "ArchBillboardBracketL";
@@ -588,6 +594,137 @@ namespace GlitchRacer
             trackEntity.Setup(type, amount, glitchDuration, glitchType);
 
             entity.AddComponent<SpinPulse>();
+
+            if (type == TrackEntityType.Score)
+            {
+                CreateGlowBox(entity.transform, "ScoreGlow", Vector3.zero, new Vector3(scale.x * 1.8f, scale.y * 1.8f, scale.z * 1.8f), new Color(1f, 0.84f, 0.2f, 0.12f));
+            }
+            else if (type == TrackEntityType.Ram)
+            {
+                CreateGlowBox(entity.transform, "RamGlow", Vector3.zero, new Vector3(scale.x * 1.5f, scale.y * 1.2f, scale.z * 1.5f), new Color(0.26f, 1f, 0.45f, 0.14f));
+            }
+            else if (type == TrackEntityType.Glitch)
+            {
+                CreateGlowBox(entity.transform, "GlitchGlow", Vector3.zero, new Vector3(scale.x * 1.8f, scale.y * 1.8f, scale.z * 1.8f), new Color(color.r, color.g, color.b, 0.18f));
+            }
+        }
+
+        private void CreateGlowBox(Transform parent, string name, Vector3 localPosition, Vector3 localScale, Color color)
+        {
+            GameObject glow = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            glow.name = name;
+            glow.transform.SetParent(parent, false);
+            glow.transform.localPosition = localPosition;
+            glow.transform.localScale = new Vector3(
+                Mathf.Max(0.1f, localScale.x),
+                Mathf.Max(0.1f, Mathf.Max(localScale.y, localScale.z)),
+                1f);
+            glow.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            RemoveCollider(glow);
+
+            Renderer renderer = glow.GetComponent<Renderer>();
+            renderer.sharedMaterial = GetGlowMaterial();
+            renderer.material.color = color;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            glow.layer = parent.gameObject.layer;
+        }
+
+        private Material GetGlowMaterial()
+        {
+            if (glowMaterial != null)
+            {
+                return glowMaterial;
+            }
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Particles/Additive");
+            }
+
+            if (shader == null)
+            {
+                shader = Shader.Find("Legacy Shaders/Particles/Additive");
+            }
+
+            if (shader == null)
+            {
+                shader = Shader.Find("Unlit/Color");
+            }
+
+            glowMaterial = new Material(shader);
+
+            if (glowMaterial.HasProperty("_Surface"))
+            {
+                glowMaterial.SetFloat("_Surface", 1f);
+            }
+
+            if (glowMaterial.HasProperty("_Blend"))
+            {
+                glowMaterial.SetFloat("_Blend", 0f);
+            }
+
+            if (glowMaterial.HasProperty("_SrcBlend"))
+            {
+                glowMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            }
+
+            if (glowMaterial.HasProperty("_DstBlend"))
+            {
+                glowMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
+            }
+
+            if (glowMaterial.HasProperty("_ZWrite"))
+            {
+                glowMaterial.SetInt("_ZWrite", 0);
+            }
+
+            glowMaterial.renderQueue = 3000;
+            Texture2D glowTex = GetOrCreateGlowTexture();
+            glowMaterial.mainTexture = glowTex;
+
+            if (glowMaterial.HasProperty("_BaseMap"))
+            {
+                glowMaterial.SetTexture("_BaseMap", glowTex);
+            }
+
+            if (glowMaterial.HasProperty("_MainTex"))
+            {
+                glowMaterial.SetTexture("_MainTex", glowTex);
+            }
+
+            return glowMaterial;
+        }
+
+        private Texture2D GetOrCreateGlowTexture()
+        {
+            if (generatedGlowTexture != null)
+            {
+                return generatedGlowTexture;
+            }
+
+            const int size = 64;
+            generatedGlowTexture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            generatedGlowTexture.wrapMode = TextureWrapMode.Clamp;
+            generatedGlowTexture.filterMode = FilterMode.Bilinear;
+
+            Vector2 center = new(size * 0.5f, size * 0.5f);
+            float radius = size * 0.5f;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float distance = Vector2.Distance(new Vector2(x, y), center);
+                    float alpha = Mathf.Clamp01(1f - (distance / radius));
+                    alpha *= alpha;
+                    generatedGlowTexture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+                }
+            }
+
+            generatedGlowTexture.Apply();
+            return generatedGlowTexture;
         }
 
         private static void ApplyColor(GameObject target, Color color)
