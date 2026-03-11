@@ -585,7 +585,6 @@ namespace GlitchRacer
             entity.transform.localPosition = new Vector3((lane - 1) * laneOffset, 1.05f, z - (segmentLength * 0.5f));
             entity.transform.localRotation = Quaternion.Euler(0f, yRotation, 0f);
             entity.transform.localScale = scale;
-            ApplyColor(entity, color);
 
             Collider collider = entity.GetComponent<Collider>();
             collider.isTrigger = true;
@@ -593,7 +592,29 @@ namespace GlitchRacer
             TrackEntity trackEntity = entity.AddComponent<TrackEntity>();
             trackEntity.Setup(type, amount, glitchDuration, glitchType);
 
-            entity.AddComponent<SpinPulse>();
+            Renderer rootRenderer = entity.GetComponent<Renderer>();
+            if (type == TrackEntityType.Score || type == TrackEntityType.Ram || type == TrackEntityType.Glitch)
+            {
+                if (rootRenderer != null)
+                {
+                    rootRenderer.enabled = false;
+                }
+
+                BuildPickupVisual(entity.transform, type, color, glitchType);
+            }
+            else if (type == TrackEntityType.Obstacle)
+            {
+                if (rootRenderer != null)
+                {
+                    rootRenderer.enabled = false;
+                }
+
+                BuildObstacleVisual(entity.transform, color);
+            }
+            else
+            {
+                ApplyColor(entity, color);
+            }
 
             if (type == TrackEntityType.Score)
             {
@@ -607,6 +628,100 @@ namespace GlitchRacer
             {
                 CreateGlowBox(entity.transform, "GlitchGlow", Vector3.zero, new Vector3(scale.x * 1.8f, scale.y * 1.8f, scale.z * 1.8f), new Color(color.r, color.g, color.b, 0.18f));
             }
+            else if (type == TrackEntityType.Obstacle)
+            {
+                CreateGlowBox(entity.transform, "ObstacleGlow", new Vector3(0f, 0.15f, 0f), new Vector3(scale.x * 1.4f, scale.y * 1.2f, scale.z * 1.2f), new Color(1f, 0.22f, 0.4f, 0.14f));
+            }
+        }
+
+        private void BuildPickupVisual(Transform parent, TrackEntityType type, Color color, GlitchRacerGame.GlitchType glitchType)
+        {
+            GameObject visualRoot = new($"{type}Visual");
+            visualRoot.transform.SetParent(parent, false);
+            visualRoot.transform.localPosition = Vector3.zero;
+            visualRoot.transform.localRotation = Quaternion.identity;
+            visualRoot.transform.localScale = Vector3.one;
+            visualRoot.AddComponent<SpinPulse>();
+
+            switch (type)
+            {
+                case TrackEntityType.Score:
+                    BuildScoreShard(visualRoot.transform, color);
+                    break;
+                case TrackEntityType.Ram:
+                    BuildRamCell(visualRoot.transform, color);
+                    break;
+                case TrackEntityType.Glitch:
+                    BuildGlitchArtifact(visualRoot.transform, color, glitchType);
+                    break;
+            }
+        }
+
+        private void BuildScoreShard(Transform parent, Color color)
+        {
+            GameObject core = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            core.name = "ShardCore";
+            core.transform.SetParent(parent, false);
+            core.transform.localPosition = Vector3.zero;
+            core.transform.localRotation = Quaternion.Euler(45f, 45f, 0f);
+            core.transform.localScale = new Vector3(0.66f, 0.66f, 0.66f);
+            ApplyColor(core, color);
+            RemoveCollider(core);
+
+            CreateVisualPart(parent, "ShardWingTop", PrimitiveType.Cube, new Vector3(0f, 0.42f, 0f), new Vector3(25f, 0f, 45f), new Vector3(0.18f, 0.52f, 0.38f), Color.Lerp(color, Color.white, 0.2f));
+            CreateVisualPart(parent, "ShardWingBottom", PrimitiveType.Cube, new Vector3(0f, -0.42f, 0f), new Vector3(-25f, 0f, 45f), new Vector3(0.18f, 0.52f, 0.38f), Color.Lerp(color, Color.white, 0.1f));
+            CreateVisualPart(parent, "ShardRing", PrimitiveType.Cylinder, new Vector3(0f, 0f, 0f), new Vector3(90f, 0f, 0f), new Vector3(0.68f, 0.06f, 0.68f), new Color(1f, 0.96f, 0.78f));
+        }
+
+        private void BuildRamCell(Transform parent, Color color)
+        {
+            CreateVisualPart(parent, "RamBody", PrimitiveType.Cube, Vector3.zero, Vector3.zero, new Vector3(0.82f, 0.92f, 0.56f), new Color(0.08f, 0.18f, 0.12f));
+            CreateVisualPart(parent, "RamCore", PrimitiveType.Cube, new Vector3(0f, 0f, 0.02f), Vector3.zero, new Vector3(0.54f, 0.7f, 0.28f), color);
+            CreateVisualPart(parent, "RamCapTop", PrimitiveType.Cube, new Vector3(0f, 0.56f, 0f), Vector3.zero, new Vector3(0.28f, 0.16f, 0.32f), new Color(0.82f, 0.92f, 1f));
+            CreateVisualPart(parent, "RamCapBottom", PrimitiveType.Cube, new Vector3(0f, -0.56f, 0f), Vector3.zero, new Vector3(0.28f, 0.16f, 0.32f), new Color(0.82f, 0.92f, 1f));
+            CreateVisualPart(parent, "RamSideL", PrimitiveType.Cube, new Vector3(-0.42f, 0f, 0f), Vector3.zero, new Vector3(0.08f, 0.72f, 0.34f), Color.Lerp(color, Color.white, 0.18f));
+            CreateVisualPart(parent, "RamSideR", PrimitiveType.Cube, new Vector3(0.42f, 0f, 0f), Vector3.zero, new Vector3(0.08f, 0.72f, 0.34f), Color.Lerp(color, Color.white, 0.18f));
+        }
+
+        private void BuildGlitchArtifact(Transform parent, Color color, GlitchRacerGame.GlitchType glitchType)
+        {
+            CreateVisualPart(parent, "GlitchCore", PrimitiveType.Cube, Vector3.zero, new Vector3(25f, 45f, 15f), new Vector3(0.76f, 0.76f, 0.76f), color);
+            CreateVisualPart(parent, "GlitchInner", PrimitiveType.Cube, new Vector3(0f, 0f, 0f), new Vector3(-15f, 25f, 55f), new Vector3(0.34f, 0.34f, 0.34f), new Color(0.96f, 0.98f, 1f));
+
+            Color accent = glitchType switch
+            {
+                GlitchRacerGame.GlitchType.StaticNoise => new Color(1f, 0.96f, 0.62f),
+                GlitchRacerGame.GlitchType.DrunkVision => new Color(0.5f, 1f, 0.96f),
+                GlitchRacerGame.GlitchType.DrugsTrip => new Color(1f, 0.58f, 0.98f),
+                _ => new Color(0.86f, 0.68f, 1f)
+            };
+
+            CreateVisualPart(parent, "GlitchSlatA", PrimitiveType.Cube, new Vector3(0f, 0.62f, 0f), new Vector3(0f, 45f, 0f), new Vector3(0.94f, 0.08f, 0.18f), accent);
+            CreateVisualPart(parent, "GlitchSlatB", PrimitiveType.Cube, new Vector3(0f, -0.62f, 0f), new Vector3(0f, -45f, 0f), new Vector3(0.94f, 0.08f, 0.18f), accent);
+            CreateVisualPart(parent, "GlitchSlatC", PrimitiveType.Cube, new Vector3(0.62f, 0f, 0f), new Vector3(45f, 0f, 0f), new Vector3(0.18f, 0.94f, 0.08f), accent);
+        }
+
+        private void BuildObstacleVisual(Transform parent, Color color)
+        {
+            CreateVisualPart(parent, "FirewallCore", PrimitiveType.Cube, new Vector3(0f, 0.05f, 0f), new Vector3(0f, 22f, 0f), new Vector3(1.65f, 1.7f, 1.15f), new Color(0.24f, 0.05f, 0.11f));
+            CreateVisualPart(parent, "FirewallPlateFront", PrimitiveType.Cube, new Vector3(0f, 0.05f, 0.5f), new Vector3(0f, 22f, 0f), new Vector3(1.18f, 1.36f, 0.08f), color);
+            CreateVisualPart(parent, "FirewallPlateBack", PrimitiveType.Cube, new Vector3(0f, 0.05f, -0.5f), new Vector3(0f, 22f, 0f), new Vector3(1.18f, 1.36f, 0.08f), color);
+            CreateVisualPart(parent, "FirewallCapTop", PrimitiveType.Cube, new Vector3(0f, 0.98f, 0f), new Vector3(0f, 22f, 0f), new Vector3(1.28f, 0.16f, 0.84f), Color.Lerp(color, Color.white, 0.1f));
+            CreateVisualPart(parent, "FirewallCapBottom", PrimitiveType.Cube, new Vector3(0f, -0.88f, 0f), new Vector3(0f, 22f, 0f), new Vector3(1.28f, 0.16f, 0.84f), new Color(0.15f, 0.04f, 0.08f));
+            CreateVisualPart(parent, "FirewallBeamA", PrimitiveType.Cube, new Vector3(0f, 0.38f, 0f), new Vector3(0f, 22f, 26f), new Vector3(1.52f, 0.09f, 0.12f), new Color(1f, 0.42f, 0.56f));
+            CreateVisualPart(parent, "FirewallBeamB", PrimitiveType.Cube, new Vector3(0f, -0.28f, 0f), new Vector3(0f, 22f, -26f), new Vector3(1.52f, 0.09f, 0.12f), new Color(1f, 0.42f, 0.56f));
+        }
+
+        private void CreateVisualPart(Transform parent, string name, PrimitiveType primitiveType, Vector3 localPosition, Vector3 localRotationEuler, Vector3 localScale, Color color)
+        {
+            GameObject part = GameObject.CreatePrimitive(primitiveType);
+            part.name = name;
+            part.transform.SetParent(parent, false);
+            part.transform.localPosition = localPosition;
+            part.transform.localRotation = Quaternion.Euler(localRotationEuler);
+            part.transform.localScale = localScale;
+            ApplyColor(part, color);
+            RemoveCollider(part);
         }
 
         private void CreateGlowBox(Transform parent, string name, Vector3 localPosition, Vector3 localScale, Color color)
