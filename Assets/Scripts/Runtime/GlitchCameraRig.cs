@@ -40,10 +40,25 @@ namespace GlitchRacer
             {
                 offset += new Vector3(2.8f, 0.4f, -2.2f);
             }
+            else if (game != null && game.IsChapterRush)
+            {
+                offset += new Vector3(0f, 0.7f, -2.8f);
+            }
 
             transform.position = Vector3.Lerp(transform.position, target.position + offset, followLerp * Time.deltaTime);
             Vector3 lookTarget = target.position + Vector3.up * 0.55f;
-            if (game != null && game.HasDrugsTrip)
+            if (game != null && game.IsChapterRush)
+            {
+                lookTarget += new Vector3(
+                    Mathf.Sin(Time.time * 1.8f) * 0.35f,
+                    Mathf.Cos(Time.time * 2.1f) * 0.2f,
+                    0f);
+                transform.position += new Vector3(
+                    Mathf.Sin(Time.time * 8.5f) * 0.08f,
+                    Mathf.Sin(Time.time * 5.8f) * 0.05f,
+                    0f);
+            }
+            else if (game != null && game.HasDrugsTrip)
             {
                 lookTarget += new Vector3(
                     Mathf.Sin(Time.time * 1.4f) * 1.95f,
@@ -73,6 +88,10 @@ namespace GlitchRacer
             {
                 roll = Mathf.Sin(Time.time * 14f) * 18f;
             }
+            else if (game != null && game.IsChapterRush)
+            {
+                roll = Mathf.Sin(Time.time * 6.8f) * 5f;
+            }
             else if (game != null && game.HasDrugsTrip)
             {
                 roll = Mathf.Sin(Time.time * 3.1f) * 16f + Mathf.Cos(Time.time * 1.7f) * 11f;
@@ -97,7 +116,11 @@ namespace GlitchRacer
             if (cachedCamera != null)
             {
                 float fovTarget = baseFieldOfView + ((game != null && game.ControlsInverted) ? 10f : 0f) + ((game != null && game.IsMenuVisible) ? 6f : 0f);
-                if (game != null && game.HasDrugsTrip)
+                if (game != null && game.IsChapterRush)
+                {
+                    fovTarget += 18f + Mathf.Sin(Time.time * 5.5f) * 2.4f;
+                }
+                else if (game != null && game.HasDrugsTrip)
                 {
                     fovTarget += 13f + Mathf.Sin(Time.time * 2.7f) * 6f + Mathf.Cos(Time.time * 1.5f) * 2.5f;
                 }
@@ -114,6 +137,13 @@ namespace GlitchRacer
                 if (game != null && game.ControlsInverted)
                 {
                     cachedCamera.backgroundColor = Color.Lerp(new Color(0.06f, 0.04f, 0.12f), new Color(0.1f, 0.24f, 0.18f), (Mathf.Sin(Time.time * 11f) + 1f) * 0.5f);
+                }
+                else if (game != null && game.IsChapterRush)
+                {
+                    cachedCamera.backgroundColor = Color.Lerp(
+                        new Color(0.01f, 0.02f, 0.08f),
+                        new Color(0.02f, 0.06f, 0.14f),
+                        (Mathf.Sin(Time.time * 3.8f) + 1f) * 0.5f);
                 }
                 else if (game != null && game.HasDrugsTrip)
                 {

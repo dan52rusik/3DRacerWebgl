@@ -15,6 +15,8 @@ namespace GlitchRacer
         private GlitchRacerGame game;
         private float nextSpawnZ;
         private int segmentIndex;
+        private bool lastChapterRushState;
+        private int lastIntegrityTier = -1;
 
         public void Configure(GlitchRacerGame gameManager)
         {
@@ -38,7 +40,21 @@ namespace GlitchRacer
                 return;
             }
 
-            float movement = game.CurrentSpeed * Time.deltaTime;
+            bool chapterRushActive = game.IsChapterRush;
+            if (chapterRushActive != lastChapterRushState)
+            {
+                RefreshSegmentEntities(chapterRushActive);
+                lastChapterRushState = chapterRushActive;
+            }
+
+            int integrityTier = GetIntegrityTier();
+            if (integrityTier != lastIntegrityTier)
+            {
+                ApplyTrackIntegrityState(integrityTier);
+                lastIntegrityTier = integrityTier;
+            }
+
+            float movement = game.VisualScrollSpeed * Time.deltaTime;
             for (int i = 0; i < activeSegments.Count; i++)
             {
                 activeSegments[i].transform.position += Vector3.back * movement;
@@ -52,7 +68,10 @@ namespace GlitchRacer
                 firstSegment.transform.position = new Vector3(0f, 0f, nextSpawnZ);
 
                 ClearSegmentEntities(firstSegment.transform);
-                PopulateSegment(firstSegment.transform, segmentIndex);
+                if (!chapterRushActive)
+                {
+                    PopulateSegment(firstSegment.transform, segmentIndex);
+                }
 
                 activeSegments.Add(firstSegment);
 
@@ -76,6 +95,8 @@ namespace GlitchRacer
 
             nextSpawnZ = 0f;
             segmentIndex = 0;
+            lastChapterRushState = game != null && game.IsChapterRush;
+            lastIntegrityTier = GetIntegrityTier();
 
             for (int i = 0; i < activeSegments.Count; i++)
             {
@@ -83,11 +104,16 @@ namespace GlitchRacer
                 segment.transform.position = new Vector3(0f, 0f, nextSpawnZ);
 
                 ClearSegmentEntities(segment.transform);
-                PopulateSegment(segment.transform, segmentIndex);
+                if (!lastChapterRushState)
+                {
+                    PopulateSegment(segment.transform, segmentIndex);
+                }
 
                 nextSpawnZ += segmentLength;
                 segmentIndex++;
             }
+
+            ApplyTrackIntegrityState(lastIntegrityTier);
         }
 
         private void ClearSegmentEntities(Transform segmentRoot)
@@ -99,12 +125,27 @@ namespace GlitchRacer
             }
         }
 
+        private void RefreshSegmentEntities(bool chapterRushActive)
+        {
+            for (int i = 0; i < activeSegments.Count; i++)
+            {
+                Transform segment = activeSegments[i].transform;
+                ClearSegmentEntities(segment);
+                if (!chapterRushActive)
+                {
+                    PopulateSegment(segment, Mathf.Max(0, segmentIndex - activeSegments.Count + i));
+                }
+            }
+        }
+
         private void CreateTrackVisual(Transform parent, int currentSegmentIndex)
         {
             CreateVoidFog(parent, currentSegmentIndex);
             CreateBridgeDeck(parent, currentSegmentIndex);
             CreateBridgeSupports(parent, currentSegmentIndex);
             CreateServerAbyss(parent, currentSegmentIndex);
+            CreateAbyssRifts(parent, currentSegmentIndex);
+            CreateAbyssCore(parent, currentSegmentIndex);
             CreateScanArches(parent, currentSegmentIndex);
         }
 
@@ -147,6 +188,22 @@ namespace GlitchRacer
             for (int strip = 0; strip < 2; strip++)
             {
                 float x = strip == 0 ? -2f : 2f;
+                GameObject riftSlot = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                riftSlot.name = $"LaneRiftSlot_{strip}";
+                riftSlot.transform.SetParent(parent, false);
+                riftSlot.transform.localPosition = new Vector3(x, -0.02f, 0f);
+                riftSlot.transform.localScale = new Vector3(0.78f, 0.12f, segmentLength * 1.02f);
+                ApplyColor(riftSlot, new Color(0.01f, 0.01f, 0.03f));
+                RemoveCollider(riftSlot);
+
+                GameObject riftCore = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                riftCore.name = $"LaneRiftCore_{strip}";
+                riftCore.transform.SetParent(parent, false);
+                riftCore.transform.localPosition = new Vector3(x, 0.01f, 0f);
+                riftCore.transform.localScale = new Vector3(0.12f, 0.03f, segmentLength);
+                ApplyColor(riftCore, new Color(0.85f, 0.95f, 1f));
+                RemoveCollider(riftCore);
+
                 GameObject seam = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 seam.name = $"LaneSeam_{strip}";
                 seam.transform.SetParent(parent, false);
@@ -154,6 +211,22 @@ namespace GlitchRacer
                 seam.transform.localScale = new Vector3(0.14f, 0.02f, segmentLength);
                 ApplyColor(seam, new Color(0.21f, 0.25f, 0.34f));
                 RemoveCollider(seam);
+
+                Color riftAccent = strip == 0 ? new Color(0.08f, 0.95f, 1f) : new Color(1f, 0.28f, 0.78f);
+                CreateGlowBox(parent, $"LaneRiftGlow_{strip}", new Vector3(x, 0.04f, 0f), new Vector3(0.42f, 0.2f, segmentLength * 0.9f), new Color(riftAccent.r, riftAccent.g, riftAccent.b, 0.18f));
+
+                for (int spark = 0; spark < 4; spark++)
+                {
+                    float sparkZ = -segmentLength * 0.34f + spark * 5.8f;
+                    GameObject riftSpark = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    riftSpark.name = $"LaneRiftSpark_{strip}_{spark}";
+                    riftSpark.transform.SetParent(parent, false);
+                    riftSpark.transform.localPosition = new Vector3(x, 0.09f, sparkZ);
+                    riftSpark.transform.localRotation = Quaternion.Euler(0f, 0f, spark % 2 == 0 ? 28f : -28f);
+                    riftSpark.transform.localScale = new Vector3(0.34f, 0.03f, 0.08f);
+                    ApplyColor(riftSpark, Color.Lerp(riftAccent, Color.white, 0.28f));
+                    RemoveCollider(riftSpark);
+                }
             }
 
             for (int marker = 0; marker < 5; marker++)
@@ -183,10 +256,178 @@ namespace GlitchRacer
                 panelGlow.transform.localScale = new Vector3(8.6f, 0.01f, 0.34f);
                 ApplyColor(panelGlow, new Color(0.16f, 0.2f, 0.3f));
                 RemoveCollider(panelGlow);
+
+                GameObject corruptionGap = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                corruptionGap.name = $"CorruptionGap_{marker}";
+                corruptionGap.transform.SetParent(parent, false);
+                corruptionGap.transform.localPosition = new Vector3(0f, 0.055f, z);
+                corruptionGap.transform.localScale = new Vector3(9.55f, 0.08f, 1.46f);
+                ApplyColor(corruptionGap, new Color(0.005f, 0.005f, 0.018f));
+                RemoveCollider(corruptionGap);
+                corruptionGap.SetActive(false);
+
+                GameObject corruptionGapCore = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                corruptionGapCore.name = $"CorruptionGapCore_{marker}";
+                corruptionGapCore.transform.SetParent(parent, false);
+                corruptionGapCore.transform.localPosition = new Vector3(0f, 0.072f, z);
+                corruptionGapCore.transform.localScale = new Vector3(2.2f, 0.016f, 1.18f);
+                ApplyColor(corruptionGapCore, new Color(0.9f, 0.92f, 1f));
+                RemoveCollider(corruptionGapCore);
+                corruptionGapCore.SetActive(false);
+
+                CreateGlowBox(parent, $"CorruptionGapGlow_{marker}", new Vector3(0f, 0.09f, z), new Vector3(5.8f, 0.22f, 1.26f), new Color(1f, 0.22f, 0.4f, 0.08f));
+                Transform gapGlow = parent.Find($"CorruptionGapGlow_{marker}");
+                if (gapGlow != null)
+                {
+                    gapGlow.gameObject.SetActive(false);
+                }
+
+                CreateVisualPart(parent, $"CorruptionGapLipL_{marker}", PrimitiveType.Cube, new Vector3(-2.35f, 0.085f, z + 0.12f), new Vector3(0f, 0f, -12f), new Vector3(4.15f, 0.05f, 0.22f), new Color(0.15f, 0.16f, 0.22f));
+                SetChildActive(parent, $"CorruptionGapLipL_{marker}", false);
+                CreateVisualPart(parent, $"CorruptionGapLipR_{marker}", PrimitiveType.Cube, new Vector3(2.35f, 0.085f, z - 0.12f), new Vector3(0f, 0f, 12f), new Vector3(4.15f, 0.05f, 0.22f), new Color(0.15f, 0.16f, 0.22f));
+                SetChildActive(parent, $"CorruptionGapLipR_{marker}", false);
+
+                CreateVisualPart(parent, $"CorruptionGapShardA_{marker}", PrimitiveType.Cube, new Vector3(-1.6f, 0.1f, z - 0.28f), new Vector3(0f, 0f, 28f), new Vector3(0.72f, 0.035f, 0.14f), new Color(1f, 0.3f, 0.5f));
+                SetChildActive(parent, $"CorruptionGapShardA_{marker}", false);
+                CreateVisualPart(parent, $"CorruptionGapShardB_{marker}", PrimitiveType.Cube, new Vector3(1.85f, 0.1f, z + 0.22f), new Vector3(0f, 0f, -24f), new Vector3(0.66f, 0.035f, 0.14f), new Color(1f, 0.3f, 0.5f));
+                SetChildActive(parent, $"CorruptionGapShardB_{marker}", false);
             }
+
+            CreateBrokenDeckEnds(parent, currentSegmentIndex);
 
             CreateBridgeSide(parent, -4.8f, leftAccent, "Left");
             CreateBridgeSide(parent, 4.8f, rightAccent, "Right");
+        }
+
+        private void CreateBrokenDeckEnds(Transform parent, int currentSegmentIndex)
+        {
+            if (currentSegmentIndex < 2)
+            {
+                return;
+            }
+
+            float[] edgeZ = { segmentLength * 0.5f - 0.2f };
+            for (int edgeIndex = 0; edgeIndex < edgeZ.Length; edgeIndex++)
+            {
+                float z = edgeZ[edgeIndex];
+                float forwardSign = 1f;
+
+                CreateHangingDeckShard(parent, $"DeckCliff_Main_{edgeIndex}", new Vector3(0f, -0.52f, z + forwardSign * 0.72f), new Vector3(64f * forwardSign, 0f, 0f), new Vector3(6.8f, 0.1f, 3.2f), new Color(0.07f, 0.08f, 0.12f));
+                CreateHangingDeckShard(parent, $"DeckCliff_Left_{edgeIndex}", new Vector3(-3.2f, -0.84f, z + forwardSign * 0.96f), new Vector3(76f * forwardSign, -8f, 0f), new Vector3(2.1f, 0.1f, 2.8f), new Color(0.06f, 0.07f, 0.11f));
+                CreateHangingDeckShard(parent, $"DeckCliff_Right_{edgeIndex}", new Vector3(3.2f, -0.74f, z + forwardSign * 0.88f), new Vector3(72f * forwardSign, 10f, 0f), new Vector3(2.4f, 0.1f, 2.5f), new Color(0.06f, 0.07f, 0.11f));
+                SetChildActive(parent, $"DeckCliff_Main_{edgeIndex}", false);
+                SetChildActive(parent, $"DeckCliff_Left_{edgeIndex}", false);
+                SetChildActive(parent, $"DeckCliff_Right_{edgeIndex}", false);
+
+                Color emberColor = new Color(1f, 0.28f, 0.78f);
+                for (int emberIndex = 0; emberIndex < 3; emberIndex++)
+                {
+                    float emberX = -2.8f + emberIndex * 2.8f;
+                    GameObject ember = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    ember.name = $"DeckCliff_Ember_{edgeIndex}_{emberIndex}";
+                    ember.transform.SetParent(parent, false);
+                    ember.transform.localPosition = new Vector3(emberX, -0.06f, z + forwardSign * 0.18f);
+                    ember.transform.localRotation = Quaternion.Euler(0f, 0f, emberIndex % 2 == 0 ? 28f : -24f);
+                    ember.transform.localScale = new Vector3(0.54f, 0.03f, 0.18f);
+                    ApplyColor(ember, emberColor);
+                    RemoveCollider(ember);
+                    ember.SetActive(false);
+                }
+            }
+        }
+
+        private void CreateHangingDeckShard(Transform parent, string name, Vector3 localPosition, Vector3 localRotationEuler, Vector3 localScale, Color color)
+        {
+            GameObject shard = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            shard.name = name;
+            shard.transform.SetParent(parent, false);
+            shard.transform.localPosition = localPosition;
+            shard.transform.localRotation = Quaternion.Euler(localRotationEuler);
+            shard.transform.localScale = localScale;
+            ApplyColor(shard, color);
+            RemoveCollider(shard);
+        }
+
+        private int GetIntegrityTier()
+        {
+            if (game == null || game.IsMenuVisible)
+            {
+                return 0;
+            }
+
+            float ram = game.CurrentRam;
+            if (ram >= 80f)
+            {
+                return 0;
+            }
+
+            if (ram >= 55f)
+            {
+                return 1;
+            }
+
+            if (ram >= 30f)
+            {
+                return 2;
+            }
+
+            return 3;
+        }
+
+        private void ApplyTrackIntegrityState(int integrityTier)
+        {
+            for (int segment = 0; segment < activeSegments.Count; segment++)
+            {
+                ApplySegmentIntegrity(activeSegments[segment].transform, integrityTier, segment);
+            }
+        }
+
+        private void ApplySegmentIntegrity(Transform segmentRoot, int integrityTier, int segmentOrder)
+        {
+            for (int marker = 0; marker < 5; marker++)
+            {
+                bool showGap = integrityTier > 0 && ShouldBreakMarker(integrityTier, segmentOrder, marker);
+                SetChildActive(segmentRoot, $"DeckPanel_{marker}", !showGap);
+                SetChildActive(segmentRoot, $"CenterLine_{marker}", !showGap);
+                SetChildActive(segmentRoot, $"PanelGlow_{marker}", !showGap);
+                SetChildActive(segmentRoot, $"CorruptionGap_{marker}", showGap);
+                SetChildActive(segmentRoot, $"CorruptionGapCore_{marker}", showGap);
+                SetChildActive(segmentRoot, $"CorruptionGapGlow_{marker}", showGap);
+                SetChildActive(segmentRoot, $"CorruptionGapLipL_{marker}", showGap);
+                SetChildActive(segmentRoot, $"CorruptionGapLipR_{marker}", showGap);
+                SetChildActive(segmentRoot, $"CorruptionGapShardA_{marker}", showGap);
+                SetChildActive(segmentRoot, $"CorruptionGapShardB_{marker}", showGap);
+            }
+
+            bool showBrokenEnds = integrityTier > 0;
+            foreach (Transform child in segmentRoot)
+            {
+                if (child.name.StartsWith("DeckCliff_"))
+                {
+                    child.gameObject.SetActive(showBrokenEnds);
+                }
+            }
+        }
+
+        private bool ShouldBreakMarker(int integrityTier, int segmentOrder, int marker)
+        {
+            int hash = (segmentOrder * 7 + marker * 3) % 5;
+            return integrityTier switch
+            {
+                1 => hash == 1,
+                2 => hash == 1 || hash == 3,
+                3 => hash != 4,
+                _ => false
+            };
+        }
+
+        private void SetChildActive(Transform parent, string childName, bool isActive)
+        {
+            Transform child = parent.Find(childName);
+            if (child != null && child.gameObject.activeSelf != isActive)
+            {
+                child.gameObject.SetActive(isActive);
+            }
         }
 
         private void CreateBridgeSide(Transform parent, float sideX, Color accent, string sideName)
@@ -287,6 +528,92 @@ namespace GlitchRacer
                     ApplyColor(shaft, new Color(0.06f, 0.22f, 0.34f));
                     RemoveCollider(shaft);
                 }
+            }
+        }
+
+        private void CreateAbyssRifts(Transform parent, int currentSegmentIndex)
+        {
+            int riftCount = currentSegmentIndex % 2 == 0 ? 2 : 1;
+            for (int i = 0; i < riftCount; i++)
+            {
+                float z = -segmentLength * 0.28f + i * 11f + Random.Range(-1.2f, 1.2f);
+                float x = i % 2 == 0 ? -1.4f : 1.8f;
+                float y = -5.4f - Random.Range(0f, 1.1f);
+
+                GameObject shell = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                shell.name = $"AbyssRiftShell_{i}";
+                shell.transform.SetParent(parent, false);
+                shell.transform.localPosition = new Vector3(x, y, z);
+                shell.transform.localRotation = Quaternion.Euler(0f, Random.Range(-20f, 20f), Random.Range(-8f, 8f));
+                shell.transform.localScale = new Vector3(2.4f, 0.2f, 6.6f);
+                ApplyColor(shell, new Color(0.02f, 0.02f, 0.05f));
+                RemoveCollider(shell);
+
+                GameObject core = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                core.name = $"AbyssRiftCore_{i}";
+                core.transform.SetParent(parent, false);
+                core.transform.localPosition = new Vector3(x, y + 0.08f, z);
+                core.transform.localRotation = shell.transform.localRotation;
+                core.transform.localScale = new Vector3(0.38f, 0.05f, 5.8f);
+                ApplyColor(core, new Color(0.92f, 0.98f, 1f));
+                RemoveCollider(core);
+
+                Color riftColor = i % 2 == 0 ? new Color(0.08f, 0.95f, 1f) : new Color(1f, 0.28f, 0.78f);
+                CreateGlowBox(parent, $"AbyssRiftGlow_{i}", new Vector3(x, y + 0.18f, z), new Vector3(2.6f, 0.45f, 6.8f), new Color(riftColor.r, riftColor.g, riftColor.b, 0.18f));
+
+                for (int spark = 0; spark < 4; spark++)
+                {
+                    float sparkOffset = -2.2f + spark * 1.45f;
+                    GameObject burst = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    burst.name = $"AbyssRiftBurst_{i}_{spark}";
+                    burst.transform.SetParent(parent, false);
+                    burst.transform.localPosition = new Vector3(x + Random.Range(-0.35f, 0.35f), y + 0.24f, z + sparkOffset);
+                    burst.transform.localRotation = Quaternion.Euler(Random.Range(-20f, 20f), Random.Range(0f, 180f), Random.Range(-30f, 30f));
+                    burst.transform.localScale = new Vector3(0.22f, 0.04f, 0.82f);
+                    ApplyColor(burst, Color.Lerp(riftColor, Color.white, 0.25f));
+                    RemoveCollider(burst);
+                }
+            }
+        }
+
+        private void CreateAbyssCore(Transform parent, int currentSegmentIndex)
+        {
+            float pulseOffset = (currentSegmentIndex % 2 == 0) ? 0.4f : -0.4f;
+
+            GameObject voidDisc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            voidDisc.name = "AbyssCoreDisc";
+            voidDisc.transform.SetParent(parent, false);
+            voidDisc.transform.localPosition = new Vector3(pulseOffset, -9.6f, 0f);
+            voidDisc.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            voidDisc.transform.localScale = new Vector3(8.5f, 0.18f, 8.5f);
+            ApplyColor(voidDisc, new Color(0.01f, 0.01f, 0.02f));
+            RemoveCollider(voidDisc);
+
+            GameObject voidInner = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            voidInner.name = "AbyssCoreInner";
+            voidInner.transform.SetParent(parent, false);
+            voidInner.transform.localPosition = new Vector3(pulseOffset, -9.48f, 0f);
+            voidInner.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            voidInner.transform.localScale = new Vector3(5.2f, 0.08f, 5.2f);
+            ApplyColor(voidInner, new Color(0f, 0f, 0f));
+            RemoveCollider(voidInner);
+
+            CreateGlowBox(parent, "AbyssCoreRing", new Vector3(pulseOffset, -9.2f, 0f), new Vector3(10.8f, 1f, 10.8f), new Color(0.08f, 0.95f, 1f, 0.12f));
+            CreateGlowBox(parent, "AbyssCoreRingHot", new Vector3(pulseOffset, -9.1f, 0f), new Vector3(7.4f, 1f, 7.4f), new Color(1f, 0.3f, 0.78f, 0.08f));
+
+            for (int i = 0; i < 6; i++)
+            {
+                float angle = i * 60f + (currentSegmentIndex % 2 == 0 ? 15f : -15f);
+                Vector3 dir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
+
+                GameObject fracture = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                fracture.name = $"AbyssCoreFracture_{i}";
+                fracture.transform.SetParent(parent, false);
+                fracture.transform.localPosition = new Vector3(pulseOffset, -8.7f, 0f) + dir * 2.6f;
+                fracture.transform.localRotation = Quaternion.Euler(0f, angle, 22f);
+                fracture.transform.localScale = new Vector3(0.22f, 0.05f, 3.4f);
+                ApplyColor(fracture, i % 2 == 0 ? new Color(0.08f, 0.95f, 1f) : new Color(1f, 0.3f, 0.78f));
+                RemoveCollider(fracture);
             }
         }
 
@@ -703,13 +1030,58 @@ namespace GlitchRacer
 
         private void BuildObstacleVisual(Transform parent, Color color)
         {
-            CreateVisualPart(parent, "FirewallCore", PrimitiveType.Cube, new Vector3(0f, 0.05f, 0f), new Vector3(0f, 22f, 0f), new Vector3(1.65f, 1.7f, 1.15f), new Color(0.24f, 0.05f, 0.11f));
-            CreateVisualPart(parent, "FirewallPlateFront", PrimitiveType.Cube, new Vector3(0f, 0.05f, 0.5f), new Vector3(0f, 22f, 0f), new Vector3(1.18f, 1.36f, 0.08f), color);
-            CreateVisualPart(parent, "FirewallPlateBack", PrimitiveType.Cube, new Vector3(0f, 0.05f, -0.5f), new Vector3(0f, 22f, 0f), new Vector3(1.18f, 1.36f, 0.08f), color);
-            CreateVisualPart(parent, "FirewallCapTop", PrimitiveType.Cube, new Vector3(0f, 0.98f, 0f), new Vector3(0f, 22f, 0f), new Vector3(1.28f, 0.16f, 0.84f), Color.Lerp(color, Color.white, 0.1f));
-            CreateVisualPart(parent, "FirewallCapBottom", PrimitiveType.Cube, new Vector3(0f, -0.88f, 0f), new Vector3(0f, 22f, 0f), new Vector3(1.28f, 0.16f, 0.84f), new Color(0.15f, 0.04f, 0.08f));
-            CreateVisualPart(parent, "FirewallBeamA", PrimitiveType.Cube, new Vector3(0f, 0.38f, 0f), new Vector3(0f, 22f, 26f), new Vector3(1.52f, 0.09f, 0.12f), new Color(1f, 0.42f, 0.56f));
-            CreateVisualPart(parent, "FirewallBeamB", PrimitiveType.Cube, new Vector3(0f, -0.28f, 0f), new Vector3(0f, 22f, -26f), new Vector3(1.52f, 0.09f, 0.12f), new Color(1f, 0.42f, 0.56f));
+            Color faceColor = Color.Lerp(color, Color.white, 0.04f);
+            Color edgeColor = new Color(0.54f, 0.03f, 0.12f);
+            Color glowColor = new Color(1f, 0.22f, 0.36f, 0.2f);
+
+            CreateVisualPart(parent, "ErrorShadow", PrimitiveType.Cube, new Vector3(0f, -0.34f, -0.12f), Vector3.zero, new Vector3(1.62f, 0.08f, 0.24f), new Color(0.18f, 0.03f, 0.07f));
+            CreateGlowBox(parent, "ErrorWordGlow", new Vector3(0f, 0.02f, 0.06f), new Vector3(1.75f, 1.1f, 1f), glowColor);
+
+            float[] centers = { -0.62f, -0.31f, 0f, 0.31f, 0.62f };
+            float width = 0.22f;
+            float height = 0.78f;
+            float thickness = 0.06f;
+            float depth = 0.2f;
+            float y = 0.06f;
+
+            BuildLetterE(parent, "ErrorE", centers[0], y, 0f, depth, width, height, thickness, faceColor, edgeColor);
+            BuildLetterR(parent, "ErrorR1", centers[1], y, 0f, depth, width, height, thickness, faceColor, edgeColor);
+            BuildLetterR(parent, "ErrorR2", centers[2], y, 0f, depth, width, height, thickness, faceColor, edgeColor);
+            BuildLetterO(parent, "ErrorO", centers[3], y, 0f, depth, width, height, thickness, faceColor, edgeColor);
+            BuildLetterR(parent, "ErrorR3", centers[4], y, 0f, depth, width, height, thickness, faceColor, edgeColor);
+        }
+
+        private void BuildLetterE(Transform parent, string prefix, float xCenter, float yCenter, float z, float depth, float width, float height, float thickness, Color faceColor, Color edgeColor)
+        {
+            CreateLetterBody(parent, $"{prefix}_Stem", new Vector3(xCenter - width * 0.5f + thickness * 0.5f, yCenter, z), new Vector3(thickness, height, depth), faceColor, edgeColor);
+            CreateLetterBody(parent, $"{prefix}_Top", new Vector3(xCenter, yCenter + height * 0.5f - thickness * 0.5f, z), new Vector3(width, thickness, depth), faceColor, edgeColor);
+            CreateLetterBody(parent, $"{prefix}_Mid", new Vector3(xCenter - width * 0.08f, yCenter, z), new Vector3(width * 0.82f, thickness, depth), faceColor, edgeColor);
+            CreateLetterBody(parent, $"{prefix}_Bottom", new Vector3(xCenter, yCenter - height * 0.5f + thickness * 0.5f, z), new Vector3(width, thickness, depth), faceColor, edgeColor);
+        }
+
+        private void BuildLetterO(Transform parent, string prefix, float xCenter, float yCenter, float z, float depth, float width, float height, float thickness, Color faceColor, Color edgeColor)
+        {
+            CreateLetterBody(parent, $"{prefix}_Top", new Vector3(xCenter, yCenter + height * 0.5f - thickness * 0.5f, z), new Vector3(width, thickness, depth), faceColor, edgeColor);
+            CreateLetterBody(parent, $"{prefix}_Bottom", new Vector3(xCenter, yCenter - height * 0.5f + thickness * 0.5f, z), new Vector3(width, thickness, depth), faceColor, edgeColor);
+            CreateLetterBody(parent, $"{prefix}_Left", new Vector3(xCenter - width * 0.5f + thickness * 0.5f, yCenter, z), new Vector3(thickness, height, depth), faceColor, edgeColor);
+            CreateLetterBody(parent, $"{prefix}_Right", new Vector3(xCenter + width * 0.5f - thickness * 0.5f, yCenter, z), new Vector3(thickness, height, depth), faceColor, edgeColor);
+        }
+
+        private void BuildLetterR(Transform parent, string prefix, float xCenter, float yCenter, float z, float depth, float width, float height, float thickness, Color faceColor, Color edgeColor)
+        {
+            CreateLetterBody(parent, $"{prefix}_Stem", new Vector3(xCenter - width * 0.5f + thickness * 0.5f, yCenter, z), new Vector3(thickness, height, depth), faceColor, edgeColor);
+            CreateLetterBody(parent, $"{prefix}_Top", new Vector3(xCenter, yCenter + height * 0.5f - thickness * 0.5f, z), new Vector3(width, thickness, depth), faceColor, edgeColor);
+            CreateLetterBody(parent, $"{prefix}_Mid", new Vector3(xCenter, yCenter, z), new Vector3(width * 0.9f, thickness, depth), faceColor, edgeColor);
+            CreateLetterBody(parent, $"{prefix}_RightUpper", new Vector3(xCenter + width * 0.5f - thickness * 0.5f, yCenter + height * 0.25f, z), new Vector3(thickness, height * 0.5f, depth), faceColor, edgeColor);
+            CreateVisualPart(parent, $"{prefix}_LegShadow", PrimitiveType.Cube, new Vector3(xCenter + width * 0.06f, yCenter - height * 0.28f, z - 0.04f), new Vector3(0f, 0f, -36f), new Vector3(thickness * 1.1f, height * 0.62f, depth), edgeColor);
+            CreateVisualPart(parent, $"{prefix}_Leg", PrimitiveType.Cube, new Vector3(xCenter + width * 0.06f, yCenter - height * 0.28f, z + 0.04f), new Vector3(0f, 0f, -36f), new Vector3(thickness, height * 0.62f, depth), faceColor);
+        }
+
+        private void CreateLetterBody(Transform parent, string name, Vector3 localPosition, Vector3 localScale, Color faceColor, Color edgeColor)
+        {
+            Vector3 shadowScale = new(localScale.x * 1.06f, localScale.y * 1.06f, localScale.z);
+            CreateVisualPart(parent, $"{name}_Shadow", PrimitiveType.Cube, localPosition + new Vector3(0f, 0f, -0.05f), Vector3.zero, shadowScale, edgeColor);
+            CreateVisualPart(parent, name, PrimitiveType.Cube, localPosition + new Vector3(0f, 0f, 0.04f), Vector3.zero, localScale, faceColor);
         }
 
         private void CreateVisualPart(Transform parent, string name, PrimitiveType primitiveType, Vector3 localPosition, Vector3 localRotationEuler, Vector3 localScale, Color color)

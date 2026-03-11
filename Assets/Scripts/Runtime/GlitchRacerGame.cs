@@ -30,6 +30,9 @@ namespace GlitchRacer
         [SerializeField] private float speedRampPerSecond = 0.65f;
         [SerializeField] private float distanceScoreFactor = 8f;
         [SerializeField] private float menuDemoSpeed = 18f;
+        [SerializeField] private float chapterDistanceInterval = 320f;
+        [SerializeField] private float chapterRushDuration = 15f;
+        [SerializeField] private float chapterRushVisualSpeedMultiplier = 2.8f;
 
         private RunnerPlayer player;
         private TrackSegmentSpawner spawner;
@@ -39,6 +42,7 @@ namespace GlitchRacer
 
         public float CurrentRam { get; private set; }
         public float CurrentSpeed { get; private set; }
+        public float VisualScrollSpeed => IsChapterRush ? CurrentSpeed * GetChapterRushSpeedFactor() : CurrentSpeed;
         public float Score { get; private set; }
         public float CurrentDistance { get; private set; }
         public float BestScore => saveData.bestScore;
@@ -56,6 +60,8 @@ namespace GlitchRacer
         public bool HasStaticNoise => glitchTimer > 0f && activeGlitch == GlitchType.StaticNoise;
         public bool HasDrunkVision => glitchTimer > 0f && activeGlitch == GlitchType.DrunkVision;
         public bool HasDrugsTrip => glitchTimer > 0f && activeGlitch == GlitchType.DrugsTrip;
+        public bool IsChapterRush => chapterRushTimer > 0f;
+        public float ChapterRushTimeRemaining => chapterRushTimer;
         public float GlitchTimeRemaining => glitchTimer;
         public GlitchType ActiveGlitch => glitchTimer > 0f ? activeGlitch : GlitchType.None;
         public string ActiveGlitchLabel => ActiveGlitch switch
@@ -77,6 +83,8 @@ namespace GlitchRacer
 
         private float glitchTimer;
         private GlitchType activeGlitch;
+        private float chapterRushTimer;
+        private float nextChapterDistance;
 
         public void Configure(RunnerPlayer playerController, TrackSegmentSpawner trackSpawner, GlitchCameraRig rig, GlitchRacerHud gameHud)
         {
@@ -100,7 +108,7 @@ namespace GlitchRacer
 
         public void AddScore(float amount)
         {
-            if (State != SessionState.Playing)
+            if (State != SessionState.Playing || IsChapterRush)
             {
                 return;
             }
@@ -110,7 +118,7 @@ namespace GlitchRacer
 
         public void AddRam(float amount)
         {
-            if (State != SessionState.Playing)
+            if (State != SessionState.Playing || IsChapterRush)
             {
                 return;
             }
@@ -248,6 +256,8 @@ namespace GlitchRacer
             CollectedDataShards = 0;
             glitchTimer = 0f;
             activeGlitch = GlitchType.None;
+            chapterRushTimer = 0f;
+            nextChapterDistance = chapterDistanceInterval;
         }
 
         private void SimulateRun()
@@ -263,12 +273,24 @@ namespace GlitchRacer
                 : menuDemoSpeed;
 
             CurrentSpeed = targetSpeed;
-            CurrentDistance += CurrentSpeed * Time.deltaTime;
+
+            if (State != SessionState.Playing || !IsChapterRush)
+            {
+                CurrentDistance += CurrentSpeed * Time.deltaTime;
+            }
 
             if (State == SessionState.Playing)
             {
-                CurrentRam = Mathf.Max(0f, CurrentRam - (ramDrainPerSecond * FuelDrainMultiplier * Time.deltaTime));
-                Score += CurrentSpeed * distanceScoreFactor * ScoreMultiplier * Time.deltaTime;
+                if (!IsChapterRush && CurrentDistance >= nextChapterDistance)
+                {
+                    TriggerChapterRush();
+                }
+
+                if (!IsChapterRush)
+                {
+                    CurrentRam = Mathf.Max(0f, CurrentRam - (ramDrainPerSecond * FuelDrainMultiplier * Time.deltaTime));
+                    Score += CurrentSpeed * distanceScoreFactor * ScoreMultiplier * Time.deltaTime;
+                }
 
                 if (CurrentRam <= 0f)
                 {
@@ -288,6 +310,11 @@ namespace GlitchRacer
                     activeGlitch = GlitchType.None;
                 }
             }
+
+            if (chapterRushTimer > 0f)
+            {
+                chapterRushTimer = Mathf.Max(0f, chapterRushTimer - Time.deltaTime);
+            }
         }
 
         private void EndRun()
@@ -304,6 +331,20 @@ namespace GlitchRacer
         private void SaveProgress()
         {
             GlitchRacerSaveSystem.Save(saveData);
+        }
+
+        private void TriggerChapterRush()
+        {
+            chapterRushTimer = chapterRushDuration;
+            nextChapterDistance += chapterDistanceInterval;
+            cameraRig?.Punch();
+        }
+
+        private float GetChapterRushSpeedFactor()
+        {
+            float normalized = 1f - Mathf.Clamp01(chapterRushTimer / Mathf.Max(0.01f, chapterRushDuration));
+            float envelope = Mathf.Sin(normalized * Mathf.PI);
+            return Mathf.Lerp(1f, chapterRushVisualSpeedMultiplier, envelope);
         }
     }
 

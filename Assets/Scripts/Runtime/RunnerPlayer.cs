@@ -174,10 +174,11 @@ namespace GlitchRacer
             Vector3 velocity = (transform.position - lastPosition) / deltaTime;
             lastPosition = transform.position;
 
-            float speedFactor = Mathf.InverseLerp(10f, 34f, game.CurrentSpeed);
+            float speedFactor = Mathf.InverseLerp(10f, 34f, game.VisualScrollSpeed);
             float lateralFactor = Mathf.Clamp01(Mathf.Abs(velocity.x) / 8f);
             float glitchFactor = game.ControlsInverted ? 1f : 0f;
-            float chaos = Mathf.Clamp01(speedFactor + (lateralFactor * 0.7f) + (glitchFactor * 0.65f));
+            float chapterFactor = game.IsChapterRush ? 1f : 0f;
+            float chaos = Mathf.Clamp01(speedFactor + (lateralFactor * 0.7f) + (glitchFactor * 0.65f) + (chapterFactor * 0.8f));
 
             bool active = game.State == GlitchRacerGame.SessionState.Playing || game.IsMenuVisible;
             UpdateSparkEmitter(leftSparks, active, chaos, lateralFactor, glitchFactor);
@@ -217,7 +218,7 @@ namespace GlitchRacer
                 return;
             }
 
-            float movement = game.CurrentSpeed * Time.deltaTime;
+            float movement = game.VisualScrollSpeed * Time.deltaTime;
             for (int i = 0; i < points.Count; i++)
             {
                 points[i] += Vector3.back * movement;
