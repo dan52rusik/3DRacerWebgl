@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -14,6 +15,9 @@ namespace GlitchRacer
         private float currentVelocity;
         private bool manualControl;
         private float autoLaneTimer;
+
+        public int CurrentLane => currentLane;
+        public float LaneOffset => laneOffset;
 
         public void Configure(GlitchRacerGame gameManager)
         {
@@ -124,11 +128,18 @@ namespace GlitchRacer
         private GlitchRacerGame game;
         private ParticleSystem leftSparks;
         private ParticleSystem rightSparks;
-        private TrailRenderer leftTrail;
-        private TrailRenderer rightTrail;
+        private Transform leftRearAnchor;
+        private Transform rightRearAnchor;
         private Material fxMaterial;
         private Vector3 lastPosition;
         private float burstCooldown;
+        private LineRenderer leftTrailLine;
+        private LineRenderer rightTrailLine;
+        private readonly List<Vector3> leftTrailPoints = new();
+        private readonly List<Vector3> rightTrailPoints = new();
+
+        private const float TrailSampleDistance = 0.08f;
+        private const float MaxTrailLength = 5.5f;
 
         public void Configure(GlitchRacerGame gameManager)
         {
@@ -139,13 +150,17 @@ namespace GlitchRacer
         {
             fxMaterial = new Material(Shader.Find("Sprites/Default"));
 
-            leftSparks = CreateSparkEmitter("LeftSparks", new Vector3(-0.58f, -0.42f, -1.08f), new Color(0.08f, 0.95f, 1f));
-            rightSparks = CreateSparkEmitter("RightSparks", new Vector3(0.58f, -0.42f, -1.08f), new Color(1f, 0.28f, 0.72f));
+            leftSparks = CreateSparkEmitter("LeftSparks", new Vector3(-0.5f, -0.34f, -0.95f), new Color(0.08f, 0.95f, 1f));
+            rightSparks = CreateSparkEmitter("RightSparks", new Vector3(0.5f, -0.34f, -0.95f), new Color(1f, 0.28f, 0.72f));
 
-            leftTrail = CreateTrail("LeftTrail", new Vector3(-0.74f, -0.12f, -1.24f), new Color(0.08f, 0.95f, 1f));
-            rightTrail = CreateTrail("RightTrail", new Vector3(0.74f, -0.12f, -1.24f), new Color(1f, 0.28f, 0.72f));
+            leftRearAnchor = CreateAnchor("LeftRearAnchor", new Vector3(-0.32f, -0.5f, -0.18f));
+            rightRearAnchor = CreateAnchor("RightRearAnchor", new Vector3(0.32f, -0.5f, -0.18f));
+
+            leftTrailLine = CreateTrailLine("LeftTrailLine", new Color(0.08f, 0.95f, 1f));
+            rightTrailLine = CreateTrailLine("RightTrailLine", new Color(1f, 0.28f, 0.72f));
 
             lastPosition = transform.position;
+            ResetTrailPoints();
         }
 
         private void Update()
@@ -167,8 +182,8 @@ namespace GlitchRacer
             bool active = game.State == GlitchRacerGame.SessionState.Playing || game.IsMenuVisible;
             UpdateSparkEmitter(leftSparks, active, chaos, lateralFactor, glitchFactor);
             UpdateSparkEmitter(rightSparks, active, chaos, lateralFactor, glitchFactor);
-            UpdateTrail(leftTrail, active, chaos);
-            UpdateTrail(rightTrail, active, chaos);
+            UpdateTrailLine(leftTrailLine, leftTrailPoints, leftRearAnchor, active, chaos, lateralFactor, glitchFactor, new Color(0.08f, 0.95f, 1f));
+            UpdateTrailLine(rightTrailLine, rightTrailPoints, rightRearAnchor, active, chaos, lateralFactor, glitchFactor, new Color(1f, 0.28f, 0.72f));
 
             burstCooldown -= Time.deltaTime;
             if (active && burstCooldown <= 0f && (lateralFactor > 0.45f || glitchFactor > 0.5f))
@@ -184,23 +199,90 @@ namespace GlitchRacer
         {
             var emission = system.emission;
             emission.enabled = active;
-            emission.rateOverTime = active ? Mathf.Lerp(6f, 42f, chaos) : 0f;
+            emission.rateOverTime = active ? Mathf.Lerp(3f, 18f, chaos) : 0f;
 
             var main = system.main;
-            main.startLifetime = Mathf.Lerp(0.14f, 0.28f, chaos);
-            main.startSpeed = Mathf.Lerp(1.2f, 4.6f, chaos);
-            main.startSize = Mathf.Lerp(0.05f, 0.11f, chaos);
+            main.startLifetime = Mathf.Lerp(0.08f, 0.16f, chaos);
+            main.startSpeed = Mathf.Lerp(0.4f, 1.5f, chaos);
+            main.startSize = Mathf.Lerp(0.03f, 0.06f, chaos);
 
             var shape = system.shape;
             shape.rotation = new Vector3(0f, 0f, Mathf.Lerp(12f, 36f, lateralFactor + glitchFactor * 0.3f));
         }
 
-        private void UpdateTrail(TrailRenderer trail, bool active, float chaos)
+        private void UpdateTrailLine(LineRenderer line, List<Vector3> points, Transform frontAnchor, bool active, float chaos, float lateralFactor, float glitchFactor, Color baseColor)
         {
-            trail.emitting = active;
-            trail.time = Mathf.Lerp(0.08f, 0.24f, chaos);
-            trail.startWidth = Mathf.Lerp(0.08f, 0.18f, chaos);
-            trail.endWidth = 0.01f;
+            if (line == null || frontAnchor == null)
+            {
+                return;
+            }
+
+            float movement = game.CurrentSpeed * Time.deltaTime;
+            for (int i = 0; i < points.Count; i++)
+            {
+                points[i] += Vector3.back * movement;
+            }
+
+            Vector3 frontPoint = frontAnchor.position;
+            if (!active)
+            {
+                points.Clear();
+            }
+
+            if (points.Count == 0)
+            {
+                points.Add(frontPoint);
+                points.Add(frontPoint + Vector3.back * 0.06f);
+            }
+            else
+            {
+                points[0] = frontPoint;
+                if (points.Count == 1 || Vector3.Distance(points[1], frontPoint) > TrailSampleDistance)
+                {
+                    points.Insert(1, frontPoint);
+                }
+            }
+
+            float traveled = 0f;
+            for (int i = 1; i < points.Count; i++)
+            {
+                traveled += Vector3.Distance(points[i - 1], points[i]);
+                if (traveled > MaxTrailLength)
+                {
+                    points.RemoveRange(i, points.Count - i);
+                    break;
+                }
+            }
+
+            line.enabled = active;
+            line.widthMultiplier = Mathf.Lerp(0.16f, 0.24f, Mathf.Clamp01(chaos + lateralFactor * 0.5f));
+            line.positionCount = points.Count;
+            line.SetPositions(points.ToArray());
+
+            Gradient gradient = new();
+            Color head = Color.Lerp(baseColor, Color.white, 0.2f);
+            gradient.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(head, 0f),
+                    new GradientColorKey(baseColor, 0.4f),
+                    new GradientColorKey(baseColor, 1f)
+                },
+                new[]
+                {
+                    new GradientAlphaKey(0.95f, 0f),
+                    new GradientAlphaKey(0.6f, 0.35f),
+                    new GradientAlphaKey(0f, 1f)
+                });
+            line.colorGradient = gradient;
+        }
+
+        private Transform CreateAnchor(string anchorName, Vector3 localPosition)
+        {
+            GameObject anchor = new(anchorName);
+            anchor.transform.SetParent(transform, false);
+            anchor.transform.localPosition = localPosition;
+            return anchor.transform;
         }
 
         private ParticleSystem CreateSparkEmitter(string effectName, Vector3 localPosition, Color color)
@@ -215,11 +297,11 @@ namespace GlitchRacer
             main.loop = true;
             main.playOnAwake = true;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.startLifetime = 0.16f;
-            main.startSpeed = 1.6f;
-            main.startSize = 0.06f;
+            main.startLifetime = 0.1f;
+            main.startSpeed = 0.8f;
+            main.startSize = 0.04f;
             main.startColor = color;
-            main.maxParticles = 120;
+            main.maxParticles = 60;
 
             var emission = system.emission;
             emission.enabled = true;
@@ -234,9 +316,9 @@ namespace GlitchRacer
             var velocityOverLifetime = system.velocityOverLifetime;
             velocityOverLifetime.enabled = true;
             velocityOverLifetime.space = ParticleSystemSimulationSpace.Local;
-            velocityOverLifetime.x = new ParticleSystem.MinMaxCurve(-0.2f, 0.2f);
-            velocityOverLifetime.y = new ParticleSystem.MinMaxCurve(0.15f, 0.65f);
-            velocityOverLifetime.z = new ParticleSystem.MinMaxCurve(-2.6f, -1.1f);
+            velocityOverLifetime.x = new ParticleSystem.MinMaxCurve(-0.08f, 0.08f);
+            velocityOverLifetime.y = new ParticleSystem.MinMaxCurve(0.02f, 0.16f);
+            velocityOverLifetime.z = new ParticleSystem.MinMaxCurve(-0.9f, -0.35f);
 
             var colorOverLifetime = system.colorOverLifetime;
             colorOverLifetime.enabled = true;
@@ -264,40 +346,38 @@ namespace GlitchRacer
             return system;
         }
 
-        private TrailRenderer CreateTrail(string trailName, Vector3 localPosition, Color color)
+        private LineRenderer CreateTrailLine(string trailName, Color color)
         {
-            GameObject trailObject = new(trailName);
-            trailObject.transform.SetParent(transform, false);
-            trailObject.transform.localPosition = localPosition;
+            GameObject lineObject = new(trailName);
+            if (transform.parent != null)
+            {
+                lineObject.transform.SetParent(transform.parent, true);
+            }
 
-            TrailRenderer trail = trailObject.AddComponent<TrailRenderer>();
-            trail.material = fxMaterial;
-            trail.time = 0.12f;
-            trail.startWidth = 0.1f;
-            trail.endWidth = 0.01f;
-            trail.alignment = LineAlignment.View;
-            trail.minVertexDistance = 0.02f;
-            trail.numCornerVertices = 2;
-            trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            trail.receiveShadows = false;
+            LineRenderer line = lineObject.AddComponent<LineRenderer>();
+            line.material = new Material(fxMaterial);
+            line.useWorldSpace = true;
+            line.alignment = LineAlignment.View;
+            line.textureMode = LineTextureMode.Stretch;
+            line.numCornerVertices = 2;
+            line.numCapVertices = 2;
+            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            line.receiveShadows = false;
+            line.startColor = color;
+            line.endColor = color;
+            return line;
+        }
 
-            Gradient gradient = new();
-            gradient.SetKeys(
-                new[]
-                {
-                    new GradientColorKey(color, 0f),
-                    new GradientColorKey(Color.white, 0.3f),
-                    new GradientColorKey(color, 1f)
-                },
-                new[]
-                {
-                    new GradientAlphaKey(0.85f, 0f),
-                    new GradientAlphaKey(0.2f, 0.65f),
-                    new GradientAlphaKey(0f, 1f)
-                });
-            trail.colorGradient = gradient;
-
-            return trail;
+        private void ResetTrailPoints()
+        {
+            Vector3 leftPoint = leftRearAnchor.position;
+            Vector3 rightPoint = rightRearAnchor.position;
+            leftTrailPoints.Clear();
+            rightTrailPoints.Clear();
+            leftTrailPoints.Add(leftPoint);
+            leftTrailPoints.Add(leftPoint + Vector3.back * 0.06f);
+            rightTrailPoints.Add(rightPoint);
+            rightTrailPoints.Add(rightPoint + Vector3.back * 0.06f);
         }
     }
 }
