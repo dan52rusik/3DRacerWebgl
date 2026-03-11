@@ -67,7 +67,7 @@ namespace GlitchRacer
             }
 
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.fieldOfView = 68f;
+            camera.fieldOfView = 74f;
 
             GlitchCameraRig rig = camera.GetComponent<GlitchCameraRig>();
             if (rig == null)
@@ -80,9 +80,9 @@ namespace GlitchRacer
                 GameObject lightObject = new("Directional Light");
                 Light light = lightObject.AddComponent<Light>();
                 light.type = LightType.Directional;
-                light.intensity = 1.1f;
-                light.color = new Color(0.55f, 0.73f, 1f);
-                light.transform.rotation = Quaternion.Euler(35f, -25f, 0f);
+                light.intensity = 0.92f;
+                light.color = new Color(0.45f, 0.68f, 1f);
+                light.transform.rotation = Quaternion.Euler(24f, -32f, 0f);
             }
 
             RunnerPlayer player = CreatePlayer();
@@ -91,6 +91,7 @@ namespace GlitchRacer
             rig.Configure(game, player.transform);
             hud.Configure(game);
             player.Configure(game);
+            player.GetComponent<VirusCarEffects>()?.Configure(game);
             game.Configure(player, spawner, rig, hud);
 
             return game;
@@ -119,7 +120,9 @@ namespace GlitchRacer
             cabin.GetComponent<Renderer>().material.color = new Color(0.6f, 0.96f, 1f);
             RemoveCollider(cabin);
 
-            return playerRoot.AddComponent<RunnerPlayer>();
+            RunnerPlayer runnerPlayer = playerRoot.AddComponent<RunnerPlayer>();
+            playerRoot.AddComponent<VirusCarEffects>();
+            return runnerPlayer;
         }
 
         private static void RemoveCollider(GameObject target)

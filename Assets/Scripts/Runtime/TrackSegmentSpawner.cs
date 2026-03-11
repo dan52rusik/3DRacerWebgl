@@ -86,104 +86,230 @@ namespace GlitchRacer
 
         private void CreateTrackVisual(Transform parent, int currentSegmentIndex)
         {
-            for (int lane = 0; lane < 3; lane++)
+            CreateVoidFog(parent, currentSegmentIndex);
+            CreateBridgeDeck(parent, currentSegmentIndex);
+            CreateBridgeSupports(parent, currentSegmentIndex);
+            CreateServerAbyss(parent, currentSegmentIndex);
+            CreateScanArches(parent, currentSegmentIndex);
+        }
+
+        private void CreateVoidFog(Transform parent, int currentSegmentIndex)
+        {
+            GameObject haze = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            haze.name = "VoidFog";
+            haze.transform.SetParent(parent, false);
+            haze.transform.localPosition = new Vector3(0f, -8.5f, 0f);
+            haze.transform.localScale = new Vector3(34f, 0.2f, segmentLength * 1.35f);
+            ApplyColor(haze, Color.Lerp(new Color(0.03f, 0.01f, 0.08f), new Color(0.02f, 0.09f, 0.14f), (currentSegmentIndex % 2) * 0.35f));
+            RemoveCollider(haze);
+
+            GameObject riftCore = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            riftCore.name = "RiftCore";
+            riftCore.transform.SetParent(parent, false);
+            riftCore.transform.localPosition = new Vector3(0f, -12.5f, 0f);
+            riftCore.transform.localScale = new Vector3(16f, 0.08f, segmentLength * 0.9f);
+            ApplyColor(riftCore, new Color(0.02f, 0.45f, 0.7f));
+            RemoveCollider(riftCore);
+        }
+
+        private void CreateBridgeDeck(Transform parent, int currentSegmentIndex)
+        {
+            Color hullColor = new(0.08f, 0.1f, 0.14f);
+            Color panelColor = new(0.13f, 0.16f, 0.22f);
+            Color leftAccent = new(0.08f, 0.95f, 1f);
+            Color rightAccent = new(1f, 0.32f, 0.76f);
+            Color centerAccent = new(0.7f, 0.9f, 1f);
+
+            GameObject deck = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            deck.name = "BridgeDeck";
+            deck.transform.SetParent(parent, false);
+            deck.transform.localPosition = new Vector3(0f, 0.02f, 0f);
+            deck.transform.localScale = new Vector3(10.2f, 0.16f, segmentLength);
+            ApplyColor(deck, hullColor);
+            RemoveCollider(deck);
+
+            GameObject undercarriage = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            undercarriage.name = "Undercarriage";
+            undercarriage.transform.SetParent(parent, false);
+            undercarriage.transform.localPosition = new Vector3(0f, -0.38f, 0f);
+            undercarriage.transform.localScale = new Vector3(8.8f, 0.26f, segmentLength);
+            ApplyColor(undercarriage, new Color(0.04f, 0.05f, 0.08f));
+            RemoveCollider(undercarriage);
+
+            for (int strip = 0; strip < 2; strip++)
             {
-                CreateLaneIslands(parent, lane, currentSegmentIndex);
+                float x = strip == 0 ? -2f : 2f;
+                GameObject seam = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                seam.name = $"LaneSeam_{strip}";
+                seam.transform.SetParent(parent, false);
+                seam.transform.localPosition = new Vector3(x, 0.06f, 0f);
+                seam.transform.localScale = new Vector3(0.14f, 0.02f, segmentLength);
+                ApplyColor(seam, new Color(0.21f, 0.25f, 0.34f));
+                RemoveCollider(seam);
             }
 
-            CreateRiftGlow(parent);
-            CreateVoidScenery(parent, currentSegmentIndex);
+            for (int marker = 0; marker < 5; marker++)
+            {
+                float z = -segmentLength * 0.5f + 3f + marker * 6f;
+
+                GameObject panel = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                panel.name = $"DeckPanel_{marker}";
+                panel.transform.SetParent(parent, false);
+                panel.transform.localPosition = new Vector3(0f, 0.065f, z);
+                panel.transform.localScale = new Vector3(9.3f, 0.02f, 0.95f);
+                ApplyColor(panel, panelColor);
+                RemoveCollider(panel);
+
+                GameObject centerLine = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                centerLine.name = $"CenterLine_{marker}";
+                centerLine.transform.SetParent(parent, false);
+                centerLine.transform.localPosition = new Vector3(0f, 0.085f, z);
+                centerLine.transform.localScale = new Vector3(0.42f, 0.015f, 0.65f);
+                ApplyColor(centerLine, centerAccent);
+                RemoveCollider(centerLine);
+            }
+
+            CreateBridgeSide(parent, -4.8f, leftAccent, "Left");
+            CreateBridgeSide(parent, 4.8f, rightAccent, "Right");
         }
 
-        private void CreateLaneIslands(Transform parent, int lane, int currentSegmentIndex)
+        private void CreateBridgeSide(Transform parent, float sideX, Color accent, string sideName)
         {
-            float laneX = (lane - 1) * laneOffset;
-            Color laneColor = lane switch
+            GameObject sideWall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            sideWall.name = $"{sideName}Wall";
+            sideWall.transform.SetParent(parent, false);
+            sideWall.transform.localPosition = new Vector3(sideX, 0.28f, 0f);
+            sideWall.transform.localScale = new Vector3(0.32f, 0.55f, segmentLength);
+            ApplyColor(sideWall, new Color(0.08f, 0.1f, 0.14f));
+            RemoveCollider(sideWall);
+
+            GameObject topRail = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            topRail.name = $"{sideName}Rail";
+            topRail.transform.SetParent(parent, false);
+            topRail.transform.localPosition = new Vector3(sideX, 0.66f, 0f);
+            topRail.transform.localScale = new Vector3(0.12f, 0.16f, segmentLength);
+            ApplyColor(topRail, Color.Lerp(accent, Color.white, 0.15f));
+            RemoveCollider(topRail);
+
+            GameObject edgeGlow = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            edgeGlow.name = $"{sideName}Glow";
+            edgeGlow.transform.SetParent(parent, false);
+            edgeGlow.transform.localPosition = new Vector3(sideX * 0.985f, 0.52f, 0f);
+            edgeGlow.transform.localScale = new Vector3(0.06f, 0.62f, segmentLength * 1.01f);
+            ApplyColor(edgeGlow, accent);
+            RemoveCollider(edgeGlow);
+        }
+
+        private void CreateBridgeSupports(Transform parent, int currentSegmentIndex)
+        {
+            for (int i = 0; i < 4; i++)
             {
-                0 => new Color(0.09f, 0.2f, 0.42f),
-                1 => new Color(0.12f, 0.15f, 0.38f),
-                _ => new Color(0.16f, 0.12f, 0.35f)
-            };
+                float z = -segmentLength * 0.5f + 4f + i * 8f;
 
-            Color glowColor = lane switch
-            {
-                0 => new Color(0.08f, 0.95f, 1f),
-                1 => new Color(0.36f, 0.66f, 1f),
-                _ => new Color(1f, 0.23f, 0.78f)
-            };
+                GameObject crossbar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                crossbar.name = $"Crossbar_{i}";
+                crossbar.transform.SetParent(parent, false);
+                crossbar.transform.localPosition = new Vector3(0f, -0.36f, z);
+                crossbar.transform.localScale = new Vector3(9.7f, 0.05f, 0.18f);
+                ApplyColor(crossbar, new Color(0.05f, 0.07f, 0.11f));
+                RemoveCollider(crossbar);
 
-            for (int pad = 0; pad < 5; pad++)
-            {
-                float padZ = (-segmentLength * 0.5f) + 3.2f + (pad * 6f);
-                float padY = -0.55f + Mathf.Sin((currentSegmentIndex * 0.8f) + (lane * 0.7f) + pad) * 0.18f;
+                for (int side = 0; side < 2; side++)
+                {
+                    float x = side == 0 ? -5.2f : 5.2f;
+                    GameObject sideRail = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    sideRail.name = $"SideRail_{i}_{side}";
+                    sideRail.transform.SetParent(parent, false);
+                    sideRail.transform.localPosition = new Vector3(x, 0.18f, z);
+                    sideRail.transform.localScale = new Vector3(0.08f, 0.44f, 0.18f);
+                    ApplyColor(sideRail, new Color(0.1f, 0.14f, 0.2f));
+                    RemoveCollider(sideRail);
 
-                GameObject island = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                island.name = $"Lane_{lane}_Island_{pad}";
-                island.transform.SetParent(parent, false);
-                island.transform.localPosition = new Vector3(laneX, padY, padZ);
-                island.transform.localScale = new Vector3(3.15f, 0.7f, 4.1f);
-                ApplyColor(island, laneColor);
-                RemoveCollider(island);
+                    GameObject sideAccent = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    sideAccent.name = $"SideAccent_{i}_{side}";
+                    sideAccent.transform.SetParent(parent, false);
+                    sideAccent.transform.localPosition = new Vector3(x, 0.22f, z);
+                    sideAccent.transform.localScale = new Vector3(0.03f, 0.34f, 0.06f);
+                    ApplyColor(sideAccent, side == 0 ? new Color(0.08f, 0.95f, 1f) : new Color(1f, 0.24f, 0.7f));
+                    RemoveCollider(sideAccent);
 
-                GameObject underGlow = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                underGlow.name = $"Lane_{lane}_Glow_{pad}";
-                underGlow.transform.SetParent(island.transform, false);
-                underGlow.transform.localPosition = new Vector3(0f, -0.42f, 0f);
-                underGlow.transform.localScale = new Vector3(1.02f, 0.12f, 1.04f);
-                ApplyColor(underGlow, glowColor);
-                RemoveCollider(underGlow);
-
-                GameObject shard = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                shard.name = $"Lane_{lane}_Shard_{pad}";
-                shard.transform.SetParent(island.transform, false);
-                shard.transform.localPosition = new Vector3(Random.Range(-1.1f, 1.1f), 0.65f, Random.Range(-1.4f, 1.4f));
-                shard.transform.localRotation = Quaternion.Euler(Random.Range(-15f, 15f), Random.Range(0f, 45f), Random.Range(-22f, 22f));
-                shard.transform.localScale = new Vector3(0.18f, Random.Range(0.35f, 0.9f), 0.18f);
-                ApplyColor(shard, Color.Lerp(laneColor, glowColor, 0.65f));
-                RemoveCollider(shard);
+                    GameObject diagonal = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    diagonal.name = $"Diagonal_{i}_{side}";
+                    diagonal.transform.SetParent(parent, false);
+                    diagonal.transform.localPosition = new Vector3(x * 0.7f, -3.2f, z);
+                    diagonal.transform.localRotation = Quaternion.Euler(0f, 0f, side == 0 ? 22f : -22f);
+                    diagonal.transform.localScale = new Vector3(0.06f, 6.6f, 0.12f);
+                    ApplyColor(diagonal, new Color(0.04f, 0.05f, 0.09f));
+                    RemoveCollider(diagonal);
+                }
             }
         }
 
-        private void CreateRiftGlow(Transform parent)
+        private void CreateServerAbyss(Transform parent, int currentSegmentIndex)
         {
-            GameObject rift = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            rift.name = "RiftGlow";
-            rift.transform.SetParent(parent, false);
-            rift.transform.localPosition = new Vector3(0f, -5.6f, 0f);
-            rift.transform.localScale = new Vector3(24f, 0.15f, segmentLength * 1.2f);
-            ApplyColor(rift, new Color(0.1f, 0.02f, 0.2f));
-            RemoveCollider(rift);
-        }
-
-        private void CreateVoidScenery(Transform parent, int currentSegmentIndex)
-        {
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < 10; i++)
             {
                 float side = i % 2 == 0 ? -1f : 1f;
-                float x = Random.Range(10f, 18f) * side;
-                float y = Random.Range(-1.5f, 7f);
+                float x = Random.Range(8f, 16f) * side;
+                float y = Random.Range(-16f, -4f);
                 float z = Random.Range(-segmentLength * 0.45f, segmentLength * 0.45f);
 
-                GameObject monolith = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                monolith.name = $"VoidMonolith_{i}";
-                monolith.transform.SetParent(parent, false);
-                monolith.transform.localPosition = new Vector3(x, y, z);
-                monolith.transform.localRotation = Quaternion.Euler(Random.Range(-12f, 12f), Random.Range(10f, 40f), Random.Range(-18f, 18f));
-                monolith.transform.localScale = new Vector3(Random.Range(0.5f, 1.2f), Random.Range(4f, 10f), Random.Range(0.5f, 1.4f));
-                ApplyColor(monolith, i % 3 == 0 ? new Color(0.08f, 0.85f, 0.95f) : new Color(0.18f, 0.12f, 0.28f));
-                RemoveCollider(monolith);
+                GameObject tower = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                tower.name = $"ServerTower_{i}";
+                tower.transform.SetParent(parent, false);
+                tower.transform.localPosition = new Vector3(x, y, z);
+                tower.transform.localRotation = Quaternion.Euler(0f, Random.Range(0f, 45f), 0f);
+                tower.transform.localScale = new Vector3(Random.Range(1.1f, 2.6f), Random.Range(8f, 22f), Random.Range(1.1f, 2.6f));
+                ApplyColor(tower, i % 3 == 0 ? new Color(0.05f, 0.1f, 0.2f) : new Color(0.09f, 0.06f, 0.14f));
+                RemoveCollider(tower);
+
+                GameObject strip = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                strip.name = $"ServerLight_{i}";
+                strip.transform.SetParent(tower.transform, false);
+                strip.transform.localPosition = new Vector3(0f, 0f, tower.transform.localScale.z * 0.51f);
+                strip.transform.localScale = new Vector3(0.12f, 0.96f, 0.08f);
+                ApplyColor(strip, i % 2 == 0 ? new Color(0.08f, 0.95f, 1f) : new Color(1f, 0.24f, 0.72f));
+                RemoveCollider(strip);
+
+                if ((i + currentSegmentIndex) % 3 == 0)
+                {
+                    GameObject shaft = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    shaft.name = $"DataShaft_{i}";
+                    shaft.transform.SetParent(parent, false);
+                    shaft.transform.localPosition = new Vector3(x * 0.75f, -8f, z);
+                    shaft.transform.localScale = new Vector3(0.45f, 18f, 0.45f);
+                    ApplyColor(shaft, new Color(0.05f, 0.42f, 0.66f));
+                    RemoveCollider(shaft);
+                }
+            }
+        }
+
+        private void CreateScanArches(Transform parent, int currentSegmentIndex)
+        {
+            if (currentSegmentIndex % 2 != 0)
+            {
+                return;
             }
 
-            if (currentSegmentIndex % 2 == 0)
+            float z = Random.Range(-2f, 2f);
+            GameObject topBar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            topBar.name = "ScanArchTop";
+            topBar.transform.SetParent(parent, false);
+            topBar.transform.localPosition = new Vector3(0f, 4.6f, z);
+            topBar.transform.localScale = new Vector3(14.5f, 0.16f, 0.6f);
+            ApplyColor(topBar, new Color(0.14f, 0.7f, 1f));
+            RemoveCollider(topBar);
+
+            for (int side = 0; side < 2; side++)
             {
-                GameObject arch = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                arch.name = "ScanlineArch";
-                arch.transform.SetParent(parent, false);
-                arch.transform.localPosition = new Vector3(0f, 4.4f, 0f);
-                arch.transform.localRotation = Quaternion.Euler(0f, 0f, 6f);
-                arch.transform.localScale = new Vector3(18f, 0.12f, 1.6f);
-                ApplyColor(arch, new Color(0.12f, 0.55f, 1f));
-                RemoveCollider(arch);
+                float x = side == 0 ? -7.2f : 7.2f;
+                GameObject pillar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                pillar.name = $"ScanArchPillar_{side}";
+                pillar.transform.SetParent(parent, false);
+                pillar.transform.localPosition = new Vector3(x, 2.2f, z);
+                pillar.transform.localScale = new Vector3(0.22f, 4.7f, 0.4f);
+                ApplyColor(pillar, side == 0 ? new Color(0.08f, 0.95f, 1f) : new Color(1f, 0.28f, 0.78f));
+                RemoveCollider(pillar);
             }
         }
 

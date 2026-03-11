@@ -4,7 +4,7 @@ namespace GlitchRacer
 {
     public class GlitchCameraRig : MonoBehaviour
     {
-        [SerializeField] private Vector3 followOffset = new(0f, 5.1f, -8.6f);
+        [SerializeField] private Vector3 followOffset = new(0f, 4.4f, -7.4f);
         [SerializeField] private float followLerp = 8f;
 
         private GlitchRacerGame game;
@@ -38,11 +38,11 @@ namespace GlitchRacer
             Vector3 offset = followOffset;
             if (game != null && game.IsMenuVisible)
             {
-                offset += new Vector3(2.3f, 0.6f, -1.8f);
+                offset += new Vector3(2.8f, 0.4f, -2.2f);
             }
 
             transform.position = Vector3.Lerp(transform.position, target.position + offset, followLerp * Time.deltaTime);
-            transform.LookAt(target.position + Vector3.up * 0.9f);
+            transform.LookAt(target.position + Vector3.up * 0.55f);
 
             float roll = 0f;
             if (game != null && game.ControlsInverted)
