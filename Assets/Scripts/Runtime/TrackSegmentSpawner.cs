@@ -60,6 +60,8 @@ namespace GlitchRacer
                 activeSegments[i].transform.position += Vector3.back * movement;
             }
 
+            nextSpawnZ -= movement;
+
             GameObject firstSegment = activeSegments[0];
             if (firstSegment.transform.position.z < -segmentLength * 1.5f)
             {
@@ -72,6 +74,8 @@ namespace GlitchRacer
                 {
                     PopulateSegment(firstSegment.transform, segmentIndex);
                 }
+
+                ApplySegmentIntegrity(firstSegment.transform, lastIntegrityTier, segmentIndex);
 
                 activeSegments.Add(firstSegment);
 
@@ -155,66 +159,45 @@ namespace GlitchRacer
 
         private void CreateBridgeDeck(Transform parent, int currentSegmentIndex)
         {
-            Color hullColor = new(0.08f, 0.1f, 0.14f);
             Color panelColor = new(0.13f, 0.16f, 0.22f);
-            Color leftAccent = new(0.08f, 0.95f, 1f);
-            Color rightAccent = new(1f, 0.32f, 0.76f);
             Color centerAccent = new(0.7f, 0.9f, 1f);
 
-            GameObject deck = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            deck.name = "BridgeDeck";
-            deck.transform.SetParent(parent, false);
-            deck.transform.localPosition = new Vector3(0f, 0.02f, 0f);
-            deck.transform.localScale = new Vector3(10.2f, 0.16f, segmentLength);
-            ApplyColor(deck, hullColor);
-            RemoveCollider(deck);
+            GameObject deckSurface = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            deckSurface.name = "DeckSurface";
+            deckSurface.transform.SetParent(parent, false);
+            deckSurface.transform.localPosition = new Vector3(0f, 0.085f, 0f);
+            deckSurface.transform.localScale = new Vector3(9.36f, 0.022f, segmentLength * 0.995f);
+            ApplyColor(deckSurface, panelColor);
+            RemoveCollider(deckSurface);
 
-            GameObject deckGlow = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            deckGlow.name = "DeckGlow";
-            deckGlow.transform.SetParent(parent, false);
-            deckGlow.transform.localPosition = new Vector3(0f, -0.04f, 0f);
-            deckGlow.transform.localScale = new Vector3(7.4f, 0.02f, segmentLength * 1.02f);
-            ApplyColor(deckGlow, new Color(0.11f, 0.14f, 0.2f));
-            RemoveCollider(deckGlow);
+            float gapLength = 1.46f;
+            float currentZ = -segmentLength * 0.5f;
 
-            GameObject undercarriage = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            undercarriage.name = "Undercarriage";
-            undercarriage.transform.SetParent(parent, false);
-            undercarriage.transform.localPosition = new Vector3(0f, -0.38f, 0f);
-            undercarriage.transform.localScale = new Vector3(8.8f, 0.26f, segmentLength);
-            ApplyColor(undercarriage, new Color(0.04f, 0.05f, 0.08f));
-            RemoveCollider(undercarriage);
+            for (int i = 0; i < 5; i++)
+            {
+                float markerZ = -segmentLength * 0.5f + 3f + i * 6f;
+                float gapStartZ = markerZ - gapLength * 0.5f;
+
+                float solidLength = gapStartZ - currentZ;
+                if (solidLength > 0.01f)
+                {
+                    CreateDeckSlice(parent, $"SolidBase_{i}", currentZ + solidLength * 0.5f, solidLength);
+                }
+
+                CreateDeckSlice(parent, $"GapBase_{i}", markerZ, gapLength);
+                currentZ = markerZ + gapLength * 0.5f;
+            }
+
+            float finalSolidLength = (segmentLength * 0.5f) - currentZ;
+            if (finalSolidLength > 0.01f)
+            {
+                CreateDeckSlice(parent, "SolidBase_5", currentZ + finalSolidLength * 0.5f, finalSolidLength);
+            }
 
             for (int strip = 0; strip < 2; strip++)
             {
                 float x = strip == 0 ? -2f : 2f;
-                GameObject riftSlot = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                riftSlot.name = $"LaneRiftSlot_{strip}";
-                riftSlot.transform.SetParent(parent, false);
-                riftSlot.transform.localPosition = new Vector3(x, -0.02f, 0f);
-                riftSlot.transform.localScale = new Vector3(0.78f, 0.12f, segmentLength * 1.02f);
-                ApplyColor(riftSlot, new Color(0.01f, 0.01f, 0.03f));
-                RemoveCollider(riftSlot);
-
-                GameObject riftCore = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                riftCore.name = $"LaneRiftCore_{strip}";
-                riftCore.transform.SetParent(parent, false);
-                riftCore.transform.localPosition = new Vector3(x, 0.01f, 0f);
-                riftCore.transform.localScale = new Vector3(0.12f, 0.03f, segmentLength);
-                ApplyColor(riftCore, new Color(0.85f, 0.95f, 1f));
-                RemoveCollider(riftCore);
-
-                GameObject seam = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                seam.name = $"LaneSeam_{strip}";
-                seam.transform.SetParent(parent, false);
-                seam.transform.localPosition = new Vector3(x, 0.06f, 0f);
-                seam.transform.localScale = new Vector3(0.14f, 0.02f, segmentLength);
-                ApplyColor(seam, new Color(0.21f, 0.25f, 0.34f));
-                RemoveCollider(seam);
-
                 Color riftAccent = strip == 0 ? new Color(0.08f, 0.95f, 1f) : new Color(1f, 0.28f, 0.78f);
-                CreateGlowBox(parent, $"LaneRiftGlow_{strip}", new Vector3(x, 0.04f, 0f), new Vector3(0.42f, 0.2f, segmentLength * 0.9f), new Color(riftAccent.r, riftAccent.g, riftAccent.b, 0.18f));
-
                 for (int spark = 0; spark < 4; spark++)
                 {
                     float sparkZ = -segmentLength * 0.34f + spark * 5.8f;
@@ -257,24 +240,6 @@ namespace GlitchRacer
                 ApplyColor(panelGlow, new Color(0.16f, 0.2f, 0.3f));
                 RemoveCollider(panelGlow);
 
-                GameObject corruptionGap = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                corruptionGap.name = $"CorruptionGap_{marker}";
-                corruptionGap.transform.SetParent(parent, false);
-                corruptionGap.transform.localPosition = new Vector3(0f, 0.055f, z);
-                corruptionGap.transform.localScale = new Vector3(9.55f, 0.08f, 1.46f);
-                ApplyColor(corruptionGap, new Color(0.005f, 0.005f, 0.018f));
-                RemoveCollider(corruptionGap);
-                corruptionGap.SetActive(false);
-
-                GameObject corruptionGapCore = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                corruptionGapCore.name = $"CorruptionGapCore_{marker}";
-                corruptionGapCore.transform.SetParent(parent, false);
-                corruptionGapCore.transform.localPosition = new Vector3(0f, 0.072f, z);
-                corruptionGapCore.transform.localScale = new Vector3(2.2f, 0.016f, 1.18f);
-                ApplyColor(corruptionGapCore, new Color(0.9f, 0.92f, 1f));
-                RemoveCollider(corruptionGapCore);
-                corruptionGapCore.SetActive(false);
-
                 CreateGlowBox(parent, $"CorruptionGapGlow_{marker}", new Vector3(0f, 0.09f, z), new Vector3(5.8f, 0.22f, 1.26f), new Color(1f, 0.22f, 0.4f, 0.08f));
                 Transform gapGlow = parent.Find($"CorruptionGapGlow_{marker}");
                 if (gapGlow != null)
@@ -292,60 +257,6 @@ namespace GlitchRacer
                 CreateVisualPart(parent, $"CorruptionGapShardB_{marker}", PrimitiveType.Cube, new Vector3(1.85f, 0.1f, z + 0.22f), new Vector3(0f, 0f, -24f), new Vector3(0.66f, 0.035f, 0.14f), new Color(1f, 0.3f, 0.5f));
                 SetChildActive(parent, $"CorruptionGapShardB_{marker}", false);
             }
-
-            CreateBrokenDeckEnds(parent, currentSegmentIndex);
-
-            CreateBridgeSide(parent, -4.8f, leftAccent, "Left");
-            CreateBridgeSide(parent, 4.8f, rightAccent, "Right");
-        }
-
-        private void CreateBrokenDeckEnds(Transform parent, int currentSegmentIndex)
-        {
-            if (currentSegmentIndex < 2)
-            {
-                return;
-            }
-
-            float[] edgeZ = { segmentLength * 0.5f - 0.2f };
-            for (int edgeIndex = 0; edgeIndex < edgeZ.Length; edgeIndex++)
-            {
-                float z = edgeZ[edgeIndex];
-                float forwardSign = 1f;
-
-                CreateHangingDeckShard(parent, $"DeckCliff_Main_{edgeIndex}", new Vector3(0f, -0.52f, z + forwardSign * 0.72f), new Vector3(64f * forwardSign, 0f, 0f), new Vector3(6.8f, 0.1f, 3.2f), new Color(0.07f, 0.08f, 0.12f));
-                CreateHangingDeckShard(parent, $"DeckCliff_Left_{edgeIndex}", new Vector3(-3.2f, -0.84f, z + forwardSign * 0.96f), new Vector3(76f * forwardSign, -8f, 0f), new Vector3(2.1f, 0.1f, 2.8f), new Color(0.06f, 0.07f, 0.11f));
-                CreateHangingDeckShard(parent, $"DeckCliff_Right_{edgeIndex}", new Vector3(3.2f, -0.74f, z + forwardSign * 0.88f), new Vector3(72f * forwardSign, 10f, 0f), new Vector3(2.4f, 0.1f, 2.5f), new Color(0.06f, 0.07f, 0.11f));
-                SetChildActive(parent, $"DeckCliff_Main_{edgeIndex}", false);
-                SetChildActive(parent, $"DeckCliff_Left_{edgeIndex}", false);
-                SetChildActive(parent, $"DeckCliff_Right_{edgeIndex}", false);
-
-                Color emberColor = new Color(1f, 0.28f, 0.78f);
-                for (int emberIndex = 0; emberIndex < 3; emberIndex++)
-                {
-                    float emberX = -2.8f + emberIndex * 2.8f;
-                    GameObject ember = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    ember.name = $"DeckCliff_Ember_{edgeIndex}_{emberIndex}";
-                    ember.transform.SetParent(parent, false);
-                    ember.transform.localPosition = new Vector3(emberX, -0.06f, z + forwardSign * 0.18f);
-                    ember.transform.localRotation = Quaternion.Euler(0f, 0f, emberIndex % 2 == 0 ? 28f : -24f);
-                    ember.transform.localScale = new Vector3(0.54f, 0.03f, 0.18f);
-                    ApplyColor(ember, emberColor);
-                    RemoveCollider(ember);
-                    ember.SetActive(false);
-                }
-            }
-        }
-
-        private void CreateHangingDeckShard(Transform parent, string name, Vector3 localPosition, Vector3 localRotationEuler, Vector3 localScale, Color color)
-        {
-            GameObject shard = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            shard.name = name;
-            shard.transform.SetParent(parent, false);
-            shard.transform.localPosition = localPosition;
-            shard.transform.localRotation = Quaternion.Euler(localRotationEuler);
-            shard.transform.localScale = localScale;
-            ApplyColor(shard, color);
-            RemoveCollider(shard);
         }
 
         private int GetIntegrityTier()
@@ -384,14 +295,17 @@ namespace GlitchRacer
 
         private void ApplySegmentIntegrity(Transform segmentRoot, int integrityTier, int segmentOrder)
         {
+            bool useContinuousSurface = integrityTier == 0;
+            SetChildActive(segmentRoot, "DeckSurface", useContinuousSurface);
+
             for (int marker = 0; marker < 5; marker++)
             {
                 bool showGap = integrityTier > 0 && ShouldBreakMarker(integrityTier, segmentOrder, marker);
-                SetChildActive(segmentRoot, $"DeckPanel_{marker}", !showGap);
-                SetChildActive(segmentRoot, $"CenterLine_{marker}", !showGap);
-                SetChildActive(segmentRoot, $"PanelGlow_{marker}", !showGap);
-                SetChildActive(segmentRoot, $"CorruptionGap_{marker}", showGap);
-                SetChildActive(segmentRoot, $"CorruptionGapCore_{marker}", showGap);
+                bool showSegmentPanel = !useContinuousSurface && !showGap;
+                SetChildActive(segmentRoot, $"DeckPanel_{marker}", showSegmentPanel);
+                SetChildActive(segmentRoot, $"CenterLine_{marker}", showSegmentPanel);
+                SetChildActive(segmentRoot, $"PanelGlow_{marker}", showSegmentPanel);
+                SetChildActive(segmentRoot, $"GapBase_{marker}", !showGap);
                 SetChildActive(segmentRoot, $"CorruptionGapGlow_{marker}", showGap);
                 SetChildActive(segmentRoot, $"CorruptionGapLipL_{marker}", showGap);
                 SetChildActive(segmentRoot, $"CorruptionGapLipR_{marker}", showGap);
@@ -399,14 +313,6 @@ namespace GlitchRacer
                 SetChildActive(segmentRoot, $"CorruptionGapShardB_{marker}", showGap);
             }
 
-            bool showBrokenEnds = integrityTier > 0;
-            foreach (Transform child in segmentRoot)
-            {
-                if (child.name.StartsWith("DeckCliff_"))
-                {
-                    child.gameObject.SetActive(showBrokenEnds);
-                }
-            }
         }
 
         private bool ShouldBreakMarker(int integrityTier, int segmentOrder, int marker)
@@ -430,13 +336,45 @@ namespace GlitchRacer
             }
         }
 
-        private void CreateBridgeSide(Transform parent, float sideX, Color accent, string sideName)
+        private void CreateDeckSlice(Transform parent, string name, float zCenter, float length)
+        {
+            GameObject sliceRoot = new(name);
+            sliceRoot.transform.SetParent(parent, false);
+            sliceRoot.transform.localPosition = new Vector3(0f, 0f, zCenter);
+
+            Color hullColor = new(0.08f, 0.1f, 0.14f);
+            Color deckGlowColor = new(0.11f, 0.14f, 0.2f);
+            Color underColor = new(0.04f, 0.05f, 0.08f);
+            Color slotColor = new(0.01f, 0.01f, 0.03f);
+            Color riftCoreColor = new(0.85f, 0.95f, 1f);
+            Color seamColor = new(0.21f, 0.25f, 0.34f);
+
+            CreateVisualPart(sliceRoot.transform, "BridgeDeck", PrimitiveType.Cube, new Vector3(0f, 0.02f, 0f), Vector3.zero, new Vector3(10.2f, 0.16f, length), hullColor);
+            CreateVisualPart(sliceRoot.transform, "DeckGlow", PrimitiveType.Cube, new Vector3(0f, -0.04f, 0f), Vector3.zero, new Vector3(7.4f, 0.02f, length), deckGlowColor);
+            CreateVisualPart(sliceRoot.transform, "Undercarriage", PrimitiveType.Cube, new Vector3(0f, -0.38f, 0f), Vector3.zero, new Vector3(8.8f, 0.26f, length), underColor);
+
+            for (int strip = 0; strip < 2; strip++)
+            {
+                float x = strip == 0 ? -2f : 2f;
+                CreateVisualPart(sliceRoot.transform, $"LaneRiftSlot_{strip}", PrimitiveType.Cube, new Vector3(x, -0.02f, 0f), Vector3.zero, new Vector3(0.78f, 0.12f, length), slotColor);
+                CreateVisualPart(sliceRoot.transform, $"LaneRiftCore_{strip}", PrimitiveType.Cube, new Vector3(x, 0.01f, 0f), Vector3.zero, new Vector3(0.12f, 0.03f, length), riftCoreColor);
+                CreateVisualPart(sliceRoot.transform, $"LaneSeam_{strip}", PrimitiveType.Cube, new Vector3(x, 0.06f, 0f), Vector3.zero, new Vector3(0.14f, 0.02f, length), seamColor);
+
+                Color riftAccent = strip == 0 ? new Color(0.08f, 0.95f, 1f) : new Color(1f, 0.28f, 0.78f);
+                CreateGlowBox(sliceRoot.transform, $"LaneRiftGlow_{strip}", new Vector3(x, 0.04f, 0f), new Vector3(0.42f, 0.2f, length), new Color(riftAccent.r, riftAccent.g, riftAccent.b, 0.18f));
+            }
+
+            CreateBridgeSide(sliceRoot.transform, -4.8f, new Color(0.08f, 0.95f, 1f), "Left", length);
+            CreateBridgeSide(sliceRoot.transform, 4.8f, new Color(1f, 0.32f, 0.76f), "Right", length);
+        }
+
+        private void CreateBridgeSide(Transform parent, float sideX, Color accent, string sideName, float length)
         {
             GameObject sideWall = GameObject.CreatePrimitive(PrimitiveType.Cube);
             sideWall.name = $"{sideName}Wall";
             sideWall.transform.SetParent(parent, false);
             sideWall.transform.localPosition = new Vector3(sideX, 0.28f, 0f);
-            sideWall.transform.localScale = new Vector3(0.32f, 0.55f, segmentLength);
+            sideWall.transform.localScale = new Vector3(0.32f, 0.55f, length);
             ApplyColor(sideWall, new Color(0.08f, 0.1f, 0.14f));
             RemoveCollider(sideWall);
 
@@ -444,7 +382,7 @@ namespace GlitchRacer
             topRail.name = $"{sideName}Rail";
             topRail.transform.SetParent(parent, false);
             topRail.transform.localPosition = new Vector3(sideX, 0.66f, 0f);
-            topRail.transform.localScale = new Vector3(0.12f, 0.16f, segmentLength);
+            topRail.transform.localScale = new Vector3(0.12f, 0.16f, length);
             ApplyColor(topRail, Color.Lerp(accent, Color.white, 0.15f));
             RemoveCollider(topRail);
 
@@ -452,11 +390,11 @@ namespace GlitchRacer
             edgeGlow.name = $"{sideName}Glow";
             edgeGlow.transform.SetParent(parent, false);
             edgeGlow.transform.localPosition = new Vector3(sideX * 0.985f, 0.52f, 0f);
-            edgeGlow.transform.localScale = new Vector3(0.06f, 0.62f, segmentLength * 1.01f);
+            edgeGlow.transform.localScale = new Vector3(0.06f, 0.62f, length * 1.01f);
             ApplyColor(edgeGlow, accent);
             RemoveCollider(edgeGlow);
 
-            CreateGlowBox(parent, $"{sideName}FakeGlow", new Vector3(sideX * 0.94f, 0.54f, 0f), new Vector3(0.28f, 0.44f, segmentLength * 1.02f), new Color(accent.r, accent.g, accent.b, 0.16f));
+            CreateGlowBox(parent, $"{sideName}FakeGlow", new Vector3(sideX * 0.94f, 0.54f, 0f), new Vector3(0.28f, 0.44f, length * 1.02f), new Color(accent.r, accent.g, accent.b, 0.16f));
         }
 
         private void CreateBridgeSupports(Transform parent, int currentSegmentIndex)
@@ -817,37 +755,39 @@ namespace GlitchRacer
 
         private void PopulateSegment(Transform parent, int currentSegmentIndex)
         {
+            int safeLane = Random.Range(0, 3);
+
             for (float z = 4f; z < segmentLength - 4f; z += 6f)
             {
                 if (currentSegmentIndex < 2)
                 {
-                    CreateScoreTriplet(parent, Random.Range(0, 3), z);
+                    CreateScoreTriplet(parent, safeLane, z);
                     continue;
                 }
 
                 int pattern = Random.Range(0, 100);
                 if (pattern < 20)
                 {
-                    CreateObstacleWall(parent, z);
+                    CreateObstacleWall(parent, z, safeLane);
                 }
                 else if (pattern < 42)
                 {
-                    CreateFuelPocket(parent, z);
+                    CreateFuelPocket(parent, z, safeLane);
                 }
                 else if (pattern < 54)
                 {
-                    CreateGlitchPickup(parent, z);
+                    CreateGlitchPickup(parent, z, safeLane);
                 }
                 else
                 {
-                    CreateScoreTriplet(parent, Random.Range(0, 3), z);
+                    CreateScoreTriplet(parent, safeLane, z);
                 }
             }
         }
 
-        private void CreateObstacleWall(Transform parent, float z)
+        private void CreateObstacleWall(Transform parent, float z, int safeLane)
         {
-            int blockedLane = Random.Range(0, 3);
+            int blockedLane = (safeLane + Random.Range(1, 3)) % 3;
             for (int lane = 0; lane < 3; lane++)
             {
                 if (lane == blockedLane)
@@ -861,18 +801,18 @@ namespace GlitchRacer
             CreateEntity(parent, TrackEntityType.Obstacle, 28f, blockedLane, z + 0.4f, PrimitiveType.Cube, new Vector3(2.3f, 2.3f, 2.3f), new Color(1f, 0.16f, 0.38f));
         }
 
-        private void CreateFuelPocket(Transform parent, float z)
+        private void CreateFuelPocket(Transform parent, float z, int safeLane)
         {
-            int fuelLane = Random.Range(0, 3);
+            int fuelLane = safeLane;
             CreateEntity(parent, TrackEntityType.Ram, 24f, fuelLane, z, PrimitiveType.Cylinder, new Vector3(1.2f, 0.5f, 1.2f), new Color(0.26f, 1f, 0.45f));
 
-            int scoreLane = (fuelLane + Random.Range(1, 3)) % 3;
+            int scoreLane = (fuelLane + 1 + Random.Range(0, 2)) % 3;
             CreateScoreTriplet(parent, scoreLane, z);
         }
 
-        private void CreateGlitchPickup(Transform parent, float z)
+        private void CreateGlitchPickup(Transform parent, float z, int safeLane)
         {
-            int glitchLane = Random.Range(0, 3);
+            int glitchLane = safeLane;
             GlitchRacerGame.GlitchType glitchType = (GlitchRacerGame.GlitchType)Random.Range(1, 5);
             Color glitchColor = glitchType switch
             {
@@ -893,7 +833,14 @@ namespace GlitchRacer
                     continue;
                 }
 
-                CreateEntity(parent, TrackEntityType.Obstacle, 18f, lane, z + 0.5f, PrimitiveType.Cube, new Vector3(1.8f, 1.8f, 1.8f), new Color(1f, 0.3f, 0.3f));
+                if (lane != ((safeLane + 1) % 3))
+                {
+                    CreateEntity(parent, TrackEntityType.Obstacle, 18f, lane, z + 0.5f, PrimitiveType.Cube, new Vector3(1.8f, 1.8f, 1.8f), new Color(1f, 0.3f, 0.3f));
+                }
+                else
+                {
+                    CreateEntity(parent, TrackEntityType.Score, 18f, lane, z + 0.4f, PrimitiveType.Sphere, new Vector3(1f, 1f, 1f), new Color(1f, 0.87f, 0.2f));
+                }
             }
         }
 

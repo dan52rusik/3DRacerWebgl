@@ -31,7 +31,7 @@ namespace GlitchRacer
         [SerializeField] private float distanceScoreFactor = 8f;
         [SerializeField] private float menuDemoSpeed = 18f;
         [SerializeField] private float chapterDistanceInterval = 320f;
-        [SerializeField] private float chapterRushDuration = 15f;
+        [SerializeField] private float chapterRushDuration = 5f;
         [SerializeField] private float chapterRushVisualSpeedMultiplier = 2.8f;
 
         private RunnerPlayer player;
