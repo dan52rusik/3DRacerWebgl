@@ -27,7 +27,7 @@ namespace GlitchRacer
 
         public void Consume(GlitchRacerGame game)
         {
-            if (consumed || game == null || game.IsGameOver)
+            if (consumed || game == null || game.State != GlitchRacerGame.SessionState.Playing)
             {
                 return;
             }
@@ -37,7 +37,7 @@ namespace GlitchRacer
             switch (entityType)
             {
                 case TrackEntityType.Score:
-                    game.AddScore(amount);
+                    game.CollectDataShard(amount);
                     break;
                 case TrackEntityType.Ram:
                     game.AddRam(amount);

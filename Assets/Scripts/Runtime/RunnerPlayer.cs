@@ -12,10 +12,26 @@ namespace GlitchRacer
         private GlitchRacerGame game;
         private int currentLane = 1;
         private float currentVelocity;
+        private bool manualControl;
+        private float autoLaneTimer;
 
         public void Configure(GlitchRacerGame gameManager)
         {
             game = gameManager;
+        }
+
+        public void SetControlMode(bool isManual)
+        {
+            manualControl = isManual;
+        }
+
+        public void ResetRunner()
+        {
+            currentLane = 1;
+            currentVelocity = 0f;
+            autoLaneTimer = 0.6f;
+            transform.position = new Vector3(0f, transform.position.y, 0f);
+            transform.rotation = Quaternion.identity;
         }
 
         private void Update()
@@ -25,15 +41,22 @@ namespace GlitchRacer
                 return;
             }
 
-            int input = ReadLaneInput();
-            if (game.ControlsInverted)
+            if (manualControl && game.IsInputEnabled)
             {
-                input *= -1;
-            }
+                int input = ReadLaneInput();
+                if (game.ControlsInverted)
+                {
+                    input *= -1;
+                }
 
-            if (input != 0)
+                if (input != 0)
+                {
+                    currentLane = Mathf.Clamp(currentLane + input, 0, 2);
+                }
+            }
+            else
             {
-                currentLane = Mathf.Clamp(currentLane + input, 0, 2);
+                UpdateAutoPilot();
             }
 
             float targetX = (currentLane - 1) * laneOffset;
@@ -56,6 +79,18 @@ namespace GlitchRacer
             {
                 entity.Consume(game);
             }
+        }
+
+        private void UpdateAutoPilot()
+        {
+            autoLaneTimer -= Time.deltaTime;
+            if (autoLaneTimer > 0f)
+            {
+                return;
+            }
+
+            autoLaneTimer = Random.Range(0.85f, 1.8f);
+            currentLane = Random.Range(0, 3);
         }
 
         private static int ReadLaneInput()

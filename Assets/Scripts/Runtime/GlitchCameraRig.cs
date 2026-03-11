@@ -35,7 +35,13 @@ namespace GlitchRacer
                 return;
             }
 
-            transform.position = Vector3.Lerp(transform.position, target.position + followOffset, followLerp * Time.deltaTime);
+            Vector3 offset = followOffset;
+            if (game != null && game.IsMenuVisible)
+            {
+                offset += new Vector3(2.3f, 0.6f, -1.8f);
+            }
+
+            transform.position = Vector3.Lerp(transform.position, target.position + offset, followLerp * Time.deltaTime);
             transform.LookAt(target.position + Vector3.up * 0.9f);
 
             float roll = 0f;
@@ -54,7 +60,7 @@ namespace GlitchRacer
 
             if (cachedCamera != null)
             {
-                float fovTarget = baseFieldOfView + ((game != null && game.ControlsInverted) ? 10f : 0f);
+                float fovTarget = baseFieldOfView + ((game != null && game.ControlsInverted) ? 10f : 0f) + ((game != null && game.IsMenuVisible) ? 6f : 0f);
                 cachedCamera.fieldOfView = Mathf.Lerp(cachedCamera.fieldOfView, fovTarget, Time.deltaTime * 5f);
                 cachedCamera.backgroundColor = game != null && game.ControlsInverted
                     ? Color.Lerp(new Color(0.03f, 0.02f, 0.08f), new Color(0.08f, 0.2f, 0.16f), (Mathf.Sin(Time.time * 11f) + 1f) * 0.5f)
