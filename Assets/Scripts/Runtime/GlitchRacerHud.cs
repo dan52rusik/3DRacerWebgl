@@ -565,14 +565,23 @@ namespace GlitchRacer
 
             GUI.Label(new Rect(rect.x + 16f, rect.y + 14f, rect.width - 210f, 18f), title, upgradeTitleStyle);
             GUI.Label(new Rect(rect.x + 16f, rect.y + 40f, rect.width - 210f, 42f), description, upgradeBodyStyle);
-            buttonRect = new Rect(rect.x + rect.width - 160f, rect.y + 28f, 140f, 42f);
+            buttonRect = new Rect(rect.x + rect.width - 152f, rect.y + 28f, 132f, 42f);
             bool hovered = buttonRect.Contains(Event.current.mousePosition);
             GUI.color = hovered ? new Color(1f, 0.8f, 0.2f, 0.92f) : new Color(0.9f, 0.68f, 0.12f, 0.82f);
             GUI.DrawTexture(buttonRect, fillTexture);
             GUI.color = new Color(0f, 0f, 0f, 0.22f);
             GUI.DrawTexture(new Rect(buttonRect.x, buttonRect.yMax - 3f, buttonRect.width, 3f), fillTexture);
             GUI.color = Color.white;
-            GUI.Label(buttonRect, priceText, centerStyle);
+
+            Rect coinRect = new Rect(buttonRect.x + 14f, buttonRect.y + 10f, 18f, 18f);
+            GUI.color = new Color(1f, 0.95f, 0.65f, 0.95f);
+            GUI.DrawTexture(coinRect, fillTexture);
+            GUI.color = new Color(0.72f, 0.52f, 0.06f, 0.9f);
+            GUI.DrawTexture(new Rect(coinRect.x + 3f, coinRect.y + 3f, 12f, 12f), fillTexture);
+            GUI.color = Color.white;
+
+            string compactPrice = priceText.Replace("Buy ", string.Empty);
+            GUI.Label(new Rect(buttonRect.x + 38f, buttonRect.y + 7f, buttonRect.width - 44f, 26f), compactPrice, upgradeTitleStyle);
         }
 
         private void EnsureStyles()
