@@ -108,7 +108,7 @@ namespace GlitchRacer
             playerRoot.name = "VirusCar";
             playerRoot.transform.position = new Vector3(0f, 0.95f, 0f);
             playerRoot.transform.localScale = new Vector3(1.8f, 1.1f, 3.2f);
-            playerRoot.GetComponent<Renderer>().material.color = new Color(0.08f, 0.95f, 0.78f);
+            ApplyRuntimeColor(playerRoot, new Color(0.08f, 0.95f, 0.78f));
 
             Rigidbody body = playerRoot.AddComponent<Rigidbody>();
             body.isKinematic = true;
@@ -122,12 +122,45 @@ namespace GlitchRacer
             cabin.transform.SetParent(playerRoot.transform, false);
             cabin.transform.localPosition = new Vector3(0f, 0.55f, -0.1f);
             cabin.transform.localScale = new Vector3(0.7f, 0.5f, 0.45f);
-            cabin.GetComponent<Renderer>().material.color = new Color(0.6f, 0.96f, 1f);
+            ApplyRuntimeColor(cabin, new Color(0.6f, 0.96f, 1f));
             RemoveCollider(cabin);
 
             RunnerPlayer runnerPlayer = playerRoot.AddComponent<RunnerPlayer>();
             playerRoot.AddComponent<VirusCarEffects>();
             return runnerPlayer;
+        }
+
+        private static void ApplyRuntimeColor(GameObject target, Color color)
+        {
+            Renderer renderer = target.GetComponent<Renderer>();
+            if (renderer == null)
+            {
+                return;
+            }
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Unlit/Color");
+            }
+
+            if (shader == null)
+            {
+                shader = Shader.Find("Sprites/Default");
+            }
+
+            Material material = new(shader);
+            if (material.HasProperty("_BaseColor"))
+            {
+                material.SetColor("_BaseColor", color);
+            }
+
+            if (material.HasProperty("_Color"))
+            {
+                material.SetColor("_Color", color);
+            }
+
+            renderer.sharedMaterial = material;
         }
 
         private static void RemoveCollider(GameObject target)

@@ -11,6 +11,7 @@ namespace GlitchRacer
 
         private readonly List<GameObject> activeSegments = new();
         private Material glowMaterial;
+        private Material solidMaterialTemplate;
         private Texture2D generatedGlowTexture;
         private GlitchRacerGame game;
         private float nextSpawnZ;
@@ -1049,11 +1050,39 @@ namespace GlitchRacer
             glow.name = name;
             glow.transform.SetParent(parent, false);
             glow.transform.localPosition = localPosition;
-            glow.transform.localScale = new Vector3(
-                Mathf.Max(0.1f, localScale.x),
-                Mathf.Max(0.1f, Mathf.Max(localScale.y, localScale.z)),
-                1f);
-            glow.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+
+            Vector3 quadScale;
+            Quaternion quadRotation;
+            bool zDominant = localScale.z > localScale.x * 1.5f && localScale.z > localScale.y * 1.5f;
+            bool xDominant = localScale.x > localScale.y * 1.5f;
+
+            if (zDominant && localScale.x < localScale.y)
+            {
+                quadScale = new Vector3(
+                    Mathf.Max(0.1f, localScale.z),
+                    Mathf.Max(0.1f, localScale.y),
+                    1f);
+                quadRotation = Quaternion.Euler(0f, 90f, 0f);
+            }
+            else if (zDominant || xDominant)
+            {
+                quadScale = new Vector3(
+                    Mathf.Max(0.1f, localScale.x),
+                    Mathf.Max(0.1f, localScale.z),
+                    1f);
+                quadRotation = Quaternion.Euler(90f, 0f, 0f);
+            }
+            else
+            {
+                quadScale = new Vector3(
+                    Mathf.Max(0.1f, localScale.x),
+                    Mathf.Max(0.1f, localScale.y),
+                    1f);
+                quadRotation = Quaternion.Euler(0f, 180f, 0f);
+            }
+
+            glow.transform.localScale = quadScale;
+            glow.transform.localRotation = quadRotation;
             RemoveCollider(glow);
 
             Renderer renderer = glow.GetComponent<Renderer>();
@@ -1161,7 +1190,7 @@ namespace GlitchRacer
             return generatedGlowTexture;
         }
 
-        private static void ApplyColor(GameObject target, Color color)
+        private void ApplyColor(GameObject target, Color color)
         {
             Renderer renderer = target.GetComponent<Renderer>();
             if (renderer == null)
@@ -1169,7 +1198,34 @@ namespace GlitchRacer
                 return;
             }
 
-            renderer.material.color = color;
+            if (solidMaterialTemplate == null)
+            {
+                Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+                if (shader == null)
+                {
+                    shader = Shader.Find("Unlit/Color");
+                }
+
+                if (shader == null)
+                {
+                    shader = Shader.Find("Sprites/Default");
+                }
+
+                solidMaterialTemplate = new Material(shader);
+            }
+
+            Material instanceMaterial = new Material(solidMaterialTemplate);
+            if (instanceMaterial.HasProperty("_BaseColor"))
+            {
+                instanceMaterial.SetColor("_BaseColor", color);
+            }
+
+            if (instanceMaterial.HasProperty("_Color"))
+            {
+                instanceMaterial.SetColor("_Color", color);
+            }
+
+            renderer.sharedMaterial = instanceMaterial;
         }
 
         private static void RemoveCollider(GameObject target)

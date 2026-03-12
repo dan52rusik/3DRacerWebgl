@@ -1,0 +1,3 @@
+﻿Build path: C:/MyGames/3DRacerWebgl/Builds
+Build number: 2
+PluginYG version: 2.008

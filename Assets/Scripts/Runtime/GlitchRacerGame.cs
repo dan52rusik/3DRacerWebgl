@@ -1,4 +1,7 @@
 using UnityEngine;
+#if PlayerStats_yg
+using YG;
+#endif
 
 namespace GlitchRacer
 {
@@ -99,7 +102,17 @@ namespace GlitchRacer
         {
             Application.targetFrameRate = 60;
             saveData = GlitchRacerSaveSystem.Load();
+#if PlayerStats_yg
+            YG2.onGetSDKData += HandleCloudSaveLoaded;
+#endif
             EnterMainMenu();
+        }
+
+        private void OnDestroy()
+        {
+#if PlayerStats_yg
+            YG2.onGetSDKData -= HandleCloudSaveLoaded;
+#endif
         }
 
         private void Update()
@@ -341,6 +354,16 @@ namespace GlitchRacer
             cameraRig?.Punch();
         }
 
+        private void HandleCloudSaveLoaded()
+        {
+            if (State == SessionState.Playing)
+            {
+                return;
+            }
+
+            saveData = GlitchRacerSaveSystem.Load();
+        }
+
         private float GetChapterRushSpeedFactor()
         {
             float normalized = 1f - Mathf.Clamp01(chapterRushTimer / Mathf.Max(0.01f, chapterRushDuration));
@@ -365,9 +388,27 @@ namespace GlitchRacer
     public static class GlitchRacerSaveSystem
     {
         private const string SaveKey = "glitch_racer_save_v1";
+#if PlayerStats_yg
+        private const string InitKey = "gr_save_initialized";
+        private const string CoinsKey = "gr_coins";
+        private const string BestScoreKey = "gr_best_score";
+        private const string BestDistanceKey = "gr_best_distance";
+        private const string TotalDistanceKey = "gr_total_distance";
+        private const string FuelUpgradeKey = "gr_fuel_upgrade";
+        private const string ScoreUpgradeKey = "gr_score_upgrade";
+        private const string MusicEnabledKey = "gr_music_enabled";
+        private const string SfxEnabledKey = "gr_sfx_enabled";
+#endif
 
         public static GlitchRacerSaveData Load()
         {
+#if PlayerStats_yg
+            if (YG2.isSDKEnabled && YG2.GetState(InitKey) == 1)
+            {
+                return FromYG2Stats();
+            }
+#endif
+
             if (!PlayerPrefs.HasKey(SaveKey))
             {
                 return new GlitchRacerSaveData();
@@ -393,6 +434,49 @@ namespace GlitchRacer
         {
             PlayerPrefs.SetString(SaveKey, JsonUtility.ToJson(data));
             PlayerPrefs.Save();
+
+#if PlayerStats_yg
+            if (YG2.isSDKEnabled)
+            {
+                ApplyToYG2Stats(data);
+            }
+#endif
         }
+
+#if PlayerStats_yg
+        private static GlitchRacerSaveData FromYG2Stats()
+        {
+            return new GlitchRacerSaveData
+            {
+                coins = YG2.GetState(CoinsKey),
+                bestScore = YG2.GetState(BestScoreKey),
+                bestDistance = YG2.GetState(BestDistanceKey),
+                totalDistance = YG2.GetState(TotalDistanceKey),
+                fuelUpgradeLevel = YG2.GetState(FuelUpgradeKey),
+                scoreUpgradeLevel = YG2.GetState(ScoreUpgradeKey),
+                musicEnabled = YG2.GetState(MusicEnabledKey) != 0,
+                sfxEnabled = YG2.GetState(SfxEnabledKey) != 0
+            };
+        }
+
+        private static void ApplyToYG2Stats(GlitchRacerSaveData data)
+        {
+            var stats = YG2.GetAllStats() != null
+                ? new System.Collections.Generic.Dictionary<string, int>(YG2.GetAllStats())
+                : new System.Collections.Generic.Dictionary<string, int>();
+
+            stats[InitKey] = 1;
+            stats[CoinsKey] = data.coins;
+            stats[BestScoreKey] = Mathf.RoundToInt(data.bestScore);
+            stats[BestDistanceKey] = Mathf.RoundToInt(data.bestDistance);
+            stats[TotalDistanceKey] = Mathf.RoundToInt(data.totalDistance);
+            stats[FuelUpgradeKey] = data.fuelUpgradeLevel;
+            stats[ScoreUpgradeKey] = data.scoreUpgradeLevel;
+            stats[MusicEnabledKey] = data.musicEnabled ? 1 : 0;
+            stats[SfxEnabledKey] = data.sfxEnabled ? 1 : 0;
+
+            YG2.SetAllStats(stats);
+        }
+#endif
     }
 }

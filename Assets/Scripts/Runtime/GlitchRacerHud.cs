@@ -87,7 +87,12 @@ namespace GlitchRacer
 
             if (game.State == GlitchRacerGame.SessionState.Playing)
             {
-                GUI.Label(new Rect(24f, Screen.height - 52f, 900f, 30f), "A/D or Left/Right. Tap left/right side of the screen on mobile.", labelStyle);
+                DrawControlHint();
+
+                if (RunnerPlayer.UseTouchControls)
+                {
+                    DrawTouchControlZones();
+                }
             }
 
             if (game.State == GlitchRacerGame.SessionState.MainMenu)
@@ -371,6 +376,27 @@ namespace GlitchRacer
                 GUI.Label(new Rect(0f, Screen.height * 0.28f, Screen.width, 60f), "CRITICAL SYSTEM INSTABILITY", centerStyle);
                 GUI.color = Color.white;
             }
+        }
+
+        private void DrawTouchControlZones()
+        {
+            Rect leftZone = new Rect(0f, Screen.height * 0.5f, Screen.width * 0.5f, Screen.height * 0.5f);
+            Rect rightZone = new Rect(Screen.width * 0.5f, Screen.height * 0.5f, Screen.width * 0.5f, Screen.height * 0.5f);
+
+            DrawSoftCard(leftZone, new Color(0.08f, 0.95f, 1f, 0.05f));
+            DrawSoftCard(rightZone, new Color(1f, 0.24f, 0.72f, 0.05f));
+
+            GUI.Label(new Rect(leftZone.x, leftZone.y + leftZone.height - 86f, leftZone.width, 30f), "LEFT", centerStyle);
+            GUI.Label(new Rect(rightZone.x, rightZone.y + rightZone.height - 86f, rightZone.width, 30f), "RIGHT", centerStyle);
+        }
+
+        private void DrawControlHint()
+        {
+            string hint = RunnerPlayer.UseTouchControls
+                ? "Tap left or right side of the screen to switch lanes."
+                : "A/D or Left/Right to switch lanes.";
+
+            GUI.Label(new Rect(24f, Screen.height - 52f, 900f, 30f), hint, labelStyle);
         }
 
         private void DrawDrugsOverlay()

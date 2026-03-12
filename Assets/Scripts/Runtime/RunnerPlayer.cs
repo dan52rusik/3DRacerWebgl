@@ -16,6 +16,19 @@ namespace GlitchRacer
         private bool manualControl;
         private float autoLaneTimer;
 
+        public static bool UseTouchControls
+        {
+            get
+            {
+                if (Application.isMobilePlatform)
+                {
+                    return true;
+                }
+
+                return Touchscreen.current != null && SystemInfo.deviceType != DeviceType.Desktop;
+            }
+        }
+
         public int CurrentLane => currentLane;
         public float LaneOffset => laneOffset;
 
@@ -113,10 +126,13 @@ namespace GlitchRacer
                 }
             }
 
-            Pointer pointer = Pointer.current;
-            if (pointer != null && pointer.press.wasPressedThisFrame)
+            if (UseTouchControls)
             {
-                return pointer.position.ReadValue().x < Screen.width * 0.5f ? -1 : 1;
+                Pointer pointer = Pointer.current;
+                if (pointer != null && pointer.press.wasPressedThisFrame)
+                {
+                    return pointer.position.ReadValue().x < Screen.width * 0.5f ? -1 : 1;
+                }
             }
 
             return 0;
@@ -148,7 +164,7 @@ namespace GlitchRacer
 
         private void Awake()
         {
-            fxMaterial = new Material(Shader.Find("Sprites/Default"));
+            fxMaterial = CreateFxMaterial();
 
             leftSparks = CreateSparkEmitter("LeftSparks", new Vector3(-0.5f, -0.34f, -0.95f), new Color(0.08f, 0.95f, 1f));
             rightSparks = CreateSparkEmitter("RightSparks", new Vector3(0.5f, -0.34f, -0.95f), new Color(1f, 0.28f, 0.72f));
@@ -379,6 +395,53 @@ namespace GlitchRacer
             leftTrailPoints.Add(leftPoint + Vector3.back * 0.06f);
             rightTrailPoints.Add(rightPoint);
             rightTrailPoints.Add(rightPoint + Vector3.back * 0.06f);
+        }
+
+        private static Material CreateFxMaterial()
+        {
+            Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Particles/Additive");
+            }
+
+            if (shader == null)
+            {
+                shader = Shader.Find("Legacy Shaders/Particles/Additive");
+            }
+
+            if (shader == null)
+            {
+                shader = Shader.Find("Unlit/Color");
+            }
+
+            if (shader == null)
+            {
+                shader = Shader.Find("Sprites/Default");
+            }
+
+            Material material = new(shader);
+            if (material.HasProperty("_Surface"))
+            {
+                material.SetFloat("_Surface", 1f);
+            }
+
+            if (material.HasProperty("_Blend"))
+            {
+                material.SetFloat("_Blend", 0f);
+            }
+
+            if (material.HasProperty("_BaseColor"))
+            {
+                material.SetColor("_BaseColor", Color.white);
+            }
+
+            if (material.HasProperty("_Color"))
+            {
+                material.SetColor("_Color", Color.white);
+            }
+
+            return material;
         }
     }
 }
