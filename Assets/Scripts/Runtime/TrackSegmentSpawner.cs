@@ -962,10 +962,11 @@ namespace GlitchRacer
             entity.transform.localScale = scale;
 
             Collider collider = entity.GetComponent<Collider>();
-            if (collider != null)
+            if (collider == null)
             {
-                collider.isTrigger = true;
+                collider = entity.AddComponent<BoxCollider>();
             }
+            collider.isTrigger = true;
 
             TrackEntity trackEntity = entity.AddComponent<TrackEntity>();
             trackEntity.Setup(type, amount, glitchDuration, glitchType);

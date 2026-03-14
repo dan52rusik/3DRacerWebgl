@@ -175,11 +175,11 @@ namespace GlitchRacer
             Color leftColor = new Color(0.08f, 0.95f, 1f);
             Color rightColor = new Color(1f, 0.28f, 0.72f);
 
-            leftSparks = CreateSparkEmitter("LeftSparks", new Vector3(-0.5f, -0.34f, -0.95f), leftColor);
-            rightSparks = CreateSparkEmitter("RightSparks", new Vector3(0.5f, -0.34f, -0.95f), rightColor);
+            leftSparks = CreateSparkEmitter("LeftSparks", new Vector3(-1.3f, 0.25f, -2.0f), leftColor);
+            rightSparks = CreateSparkEmitter("RightSparks", new Vector3(1.3f, 0.25f, -2.0f), rightColor);
 
-            leftRearAnchor = CreateAnchor("LeftRearAnchor", new Vector3(-0.32f, -0.5f, -0.18f));
-            rightRearAnchor = CreateAnchor("RightRearAnchor", new Vector3(0.32f, -0.5f, -0.18f));
+            leftRearAnchor = CreateAnchor("LeftRearAnchor", new Vector3(-1.8f, 0.18f, -1.2f));
+            rightRearAnchor = CreateAnchor("RightRearAnchor", new Vector3(1.8f, 0.18f, -1.2f));
 
             leftTrailLine = CreateTrailLine("LeftTrailLine", leftColor);
             rightTrailLine = CreateTrailLine("RightTrailLine", rightColor);

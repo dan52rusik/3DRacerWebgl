@@ -45,7 +45,7 @@ namespace GlitchRacer
                 GameObject[] sceneObjects = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
                 for (int i = 0; i < sceneObjects.Length; i++)
                 {
-                    if (sceneObjects[i].transform.parent == null)
+                    if (sceneObjects[i] != null && sceneObjects[i].transform.parent == null)
                     {
                         Object.DestroyImmediate(sceneObjects[i]);
                     }
@@ -187,26 +187,11 @@ namespace GlitchRacer
 
         private static RunnerPlayer CreatePlayer()
         {
-            GameObject playerRoot = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            playerRoot.name = "VirusCar";
+            GameObject playerRoot = new GameObject("VirusCar");
             playerRoot.transform.position = new Vector3(0f, 0.95f, 0f);
-            playerRoot.transform.localScale = new Vector3(1.8f, 1.1f, 3.2f);
-            ApplyRuntimeColor(playerRoot, new Color(0.08f, 0.95f, 0.78f));
 
-            Rigidbody body = playerRoot.AddComponent<Rigidbody>();
-            body.isKinematic = true;
-            body.useGravity = false;
-
-            BoxCollider collider = playerRoot.GetComponent<BoxCollider>();
-            collider.size = new Vector3(0.95f, 0.95f, 0.95f);
-
-            GameObject cabin = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cabin.name = "Cabin";
-            cabin.transform.SetParent(playerRoot.transform, false);
-            cabin.transform.localPosition = new Vector3(0f, 0.55f, -0.1f);
-            cabin.transform.localScale = new Vector3(0.7f, 0.5f, 0.45f);
-            ApplyRuntimeColor(cabin, new Color(0.6f, 0.96f, 1f));
-            RemoveCollider(cabin);
+            EnsurePlayerVisuals(playerRoot);
+            EnsurePlayerPhysics(playerRoot);
 
             RunnerPlayer runnerPlayer = playerRoot.AddComponent<RunnerPlayer>();
             playerRoot.AddComponent<VirusCarEffects>();
@@ -217,27 +202,148 @@ namespace GlitchRacer
         {
             playerRoot.name = "VirusCar";
             playerRoot.transform.position = new Vector3(0f, 0.95f, 0f);
-            playerRoot.transform.localScale = new Vector3(1.8f, 1.1f, 3.2f);
-            ApplyRuntimeColor(playerRoot, new Color(0.08f, 0.95f, 0.78f));
+            playerRoot.transform.localScale = Vector3.one;
 
-            Transform cabin = playerRoot.transform.Find("Cabin");
-            if (cabin == null)
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
             {
-                GameObject cabinObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                cabinObject.name = "Cabin";
-                cabinObject.transform.SetParent(playerRoot.transform, false);
-                cabinObject.transform.localPosition = new Vector3(0f, 0.55f, -0.1f);
-                cabinObject.transform.localScale = new Vector3(0.7f, 0.5f, 0.45f);
-                ApplyRuntimeColor(cabinObject, new Color(0.6f, 0.96f, 1f));
-                RemoveCollider(cabinObject);
+                if (playerRoot.GetComponent<MeshRenderer>()) Object.DestroyImmediate(playerRoot.GetComponent<MeshRenderer>());
+                if (playerRoot.GetComponent<MeshFilter>()) Object.DestroyImmediate(playerRoot.GetComponent<MeshFilter>());
             }
             else
+#endif
             {
-                cabin.localPosition = new Vector3(0f, 0.55f, -0.1f);
-                cabin.localRotation = Quaternion.identity;
-                cabin.localScale = new Vector3(0.7f, 0.5f, 0.45f);
-                ApplyRuntimeColor(cabin.gameObject, new Color(0.6f, 0.96f, 1f));
+                if (playerRoot.GetComponent<MeshRenderer>()) Object.Destroy(playerRoot.GetComponent<MeshRenderer>());
+                if (playerRoot.GetComponent<MeshFilter>()) Object.Destroy(playerRoot.GetComponent<MeshFilter>());
             }
+
+            Transform visuals = playerRoot.transform.Find("Visuals");
+            if (visuals != null)
+            {
+                DestroyObject(visuals.gameObject);
+            }
+            Transform oldCabin = playerRoot.transform.Find("Cabin");
+            if (oldCabin != null) DestroyObject(oldCabin.gameObject);
+
+            GameObject vRoot = new GameObject("Visuals");
+            vRoot.transform.SetParent(playerRoot.transform, false);
+
+            Color armorColor = new Color(0.12f, 0.16f, 0.22f); 
+            Color wingColor = new Color(0.08f, 0.12f, 0.18f);
+            Color accentColor = new Color(0f, 0.96f, 0.82f); 
+            Color engineColor = new Color(1f, 0.25f, 0.1f);
+            Color glassColor = new Color(0.15f, 0.85f, 1f);
+
+            GameObject core = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            core.name = "Fuselage";
+            core.transform.SetParent(vRoot.transform, false);
+            core.transform.localPosition = new Vector3(0f, 0.2f, 0f);
+            core.transform.localScale = new Vector3(1.0f, 0.6f, 3.2f);
+            ApplyRuntimeColor(core, armorColor);
+            RemoveCollider(core);
+
+            GameObject canopy = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            canopy.name = "Canopy";
+            canopy.transform.SetParent(vRoot.transform, false);
+            canopy.transform.localPosition = new Vector3(0f, 0.45f, 0.4f);
+            canopy.transform.localRotation = Quaternion.Euler(14f, 0f, 0f);
+            canopy.transform.localScale = new Vector3(0.75f, 0.4f, 1.4f);
+            ApplyRuntimeColor(canopy, glassColor);
+            RemoveCollider(canopy);
+
+            GameObject wingL = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            wingL.name = "WingL";
+            wingL.transform.SetParent(vRoot.transform, false);
+            wingL.transform.localPosition = new Vector3(-1.1f, 0.18f, -0.6f);
+            wingL.transform.localRotation = Quaternion.Euler(0f, 28f, 0f);
+            wingL.transform.localScale = new Vector3(1.6f, 0.15f, 1.4f);
+            ApplyRuntimeColor(wingL, wingColor);
+            RemoveCollider(wingL);
+
+            GameObject wingR = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            wingR.name = "WingR";
+            wingR.transform.SetParent(vRoot.transform, false);
+            wingR.transform.localPosition = new Vector3(1.1f, 0.18f, -0.6f);
+            wingR.transform.localRotation = Quaternion.Euler(0f, -28f, 0f);
+            wingR.transform.localScale = new Vector3(1.6f, 0.15f, 1.4f);
+            ApplyRuntimeColor(wingR, wingColor);
+            RemoveCollider(wingR);
+
+            GameObject engL = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            engL.name = "EngineL";
+            engL.transform.SetParent(vRoot.transform, false);
+            engL.transform.localPosition = new Vector3(-1.3f, 0.25f, -1.3f);
+            engL.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            engL.transform.localScale = new Vector3(0.40f, 0.6f, 0.40f);
+            ApplyRuntimeColor(engL, armorColor);
+            RemoveCollider(engL);
+
+            GameObject engR = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            engR.name = "EngineR";
+            engR.transform.SetParent(vRoot.transform, false);
+            engR.transform.localPosition = new Vector3(1.3f, 0.25f, -1.3f);
+            engR.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            engR.transform.localScale = new Vector3(0.40f, 0.6f, 0.40f);
+            ApplyRuntimeColor(engR, armorColor);
+            RemoveCollider(engR);
+
+            GameObject glowL = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            glowL.name = "GlowL";
+            glowL.transform.SetParent(vRoot.transform, false);
+            glowL.transform.localPosition = new Vector3(-1.3f, 0.25f, -1.95f);
+            glowL.transform.localScale = new Vector3(0.35f, 0.35f, 0.35f);
+            ApplyRuntimeColor(glowL, engineColor);
+            RemoveCollider(glowL);
+
+            GameObject glowR = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            glowR.name = "GlowR";
+            glowR.transform.SetParent(vRoot.transform, false);
+            glowR.transform.localPosition = new Vector3(1.3f, 0.25f, -1.95f);
+            glowR.transform.localScale = new Vector3(0.35f, 0.35f, 0.35f);
+            ApplyRuntimeColor(glowR, engineColor);
+            RemoveCollider(glowR);
+
+            GameObject thruster = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            thruster.name = "ThrusterMain";
+            thruster.transform.SetParent(vRoot.transform, false);
+            thruster.transform.localPosition = new Vector3(0f, 0.2f, -1.65f);
+            thruster.transform.localScale = new Vector3(0.85f, 0.35f, 0.25f);
+            ApplyRuntimeColor(thruster, accentColor);
+            RemoveCollider(thruster);
+
+            GameObject finL = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            finL.name = "FinL";
+            finL.transform.SetParent(vRoot.transform, false);
+            finL.transform.localPosition = new Vector3(-0.45f, 0.75f, -1.0f);
+            finL.transform.localRotation = Quaternion.Euler(0f, 0f, 22f);
+            finL.transform.localScale = new Vector3(0.12f, 0.7f, 1.0f);
+            ApplyRuntimeColor(finL, accentColor);
+            RemoveCollider(finL);
+
+            GameObject finR = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            finR.name = "FinR";
+            finR.transform.SetParent(vRoot.transform, false);
+            finR.transform.localPosition = new Vector3(0.45f, 0.75f, -1.0f);
+            finR.transform.localRotation = Quaternion.Euler(0f, 0f, -22f);
+            finR.transform.localScale = new Vector3(0.12f, 0.7f, 1.0f);
+            ApplyRuntimeColor(finR, accentColor);
+            RemoveCollider(finR);
+
+            GameObject noseL = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            noseL.name = "NoseL";
+            noseL.transform.SetParent(vRoot.transform, false);
+            noseL.transform.localPosition = new Vector3(-0.45f, 0.2f, 1.0f);
+            noseL.transform.localScale = new Vector3(0.08f, 0.08f, 1.8f);
+            ApplyRuntimeColor(noseL, accentColor);
+            RemoveCollider(noseL);
+
+            GameObject noseR = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            noseR.name = "NoseR";
+            noseR.transform.SetParent(vRoot.transform, false);
+            noseR.transform.localPosition = new Vector3(0.45f, 0.2f, 1.0f);
+            noseR.transform.localScale = new Vector3(0.08f, 0.08f, 1.8f);
+            ApplyRuntimeColor(noseR, accentColor);
+            RemoveCollider(noseR);
         }
 
         private static void EnsurePlayerPhysics(GameObject playerRoot)
@@ -253,7 +359,8 @@ namespace GlitchRacer
             }
 
             collider.isTrigger = false;
-            collider.size = new Vector3(0.95f, 0.95f, 0.95f);
+            collider.center = new Vector3(0f, 0.4f, 0f);
+            collider.size = new Vector3(1.7f, 1.0f, 3.2f);
         }
 
         private static void CleanupDuplicateNamedObjects(string objectName)
