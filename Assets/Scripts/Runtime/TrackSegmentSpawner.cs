@@ -8,14 +8,13 @@ namespace GlitchRacer
         [SerializeField] private float segmentLength = 30f;
         [SerializeField] private int visibleSegments = 7;
         [SerializeField] private float laneOffset = 4f;
+        [Header("Material Templates")]
+        [SerializeField] private Material solidTemplate;
+        [SerializeField] private Material glowTemplate;
 
         private readonly List<GameObject> activeSegments = new();
-        // FIX: вместо solidMaterialTemplate + new Material() на каждый объект -
-        // пул материалов, ключ = Color. Один материал на уникальный цвет на весь сеанс.
-        // new Material() в цикле - главная причина GC-спайков и прерывистости дороги.
         private readonly Dictionary<Color, Material> solidMaterialPool = new();
-        private Material glowMaterial;
-        private Shader cachedSolidShader;
+        private Material cachedGlowMaterial;
         private Texture2D generatedGlowTexture;
         private GlitchRacerGame game;
         private float nextSpawnZ;
@@ -76,22 +75,24 @@ namespace GlitchRacer
 
             nextSpawnZ -= movement;
 
-            GameObject firstSegment = activeSegments[0];
-            if (firstSegment.transform.position.z < -segmentLength * 1.5f)
+            // Улучшенная проверка: используем цикл, если пропустили несколько сегментов из-за лага
+            while (activeSegments.Count > 0 && activeSegments[0].transform.position.z < -segmentLength * 1.5f)
             {
+                GameObject segment = activeSegments[0];
                 activeSegments.RemoveAt(0);
 
-                firstSegment.transform.position = new Vector3(0f, 0f, nextSpawnZ);
+                // Ставим сегмент ровно в конец очереди, используя текущий nextSpawnZ
+                segment.transform.position = new Vector3(0f, 0f, nextSpawnZ);
 
-                ClearSegmentEntities(firstSegment.transform);
+                ClearSegmentEntities(segment.transform);
                 if (!chapterRushActive)
                 {
-                    PopulateSegment(firstSegment.transform, segmentIndex);
+                    PopulateSegment(segment.transform, segmentIndex);
                 }
 
-                ApplySegmentIntegrity(firstSegment.transform, lastIntegrityTier, segmentIndex);
+                ApplySegmentIntegrity(segment.transform, lastIntegrityTier, segmentIndex);
 
-                activeSegments.Add(firstSegment);
+                activeSegments.Add(segment);
 
                 nextSpawnZ += segmentLength;
                 segmentIndex++;
@@ -1166,69 +1167,65 @@ namespace GlitchRacer
 
         private Material GetGlowMaterial()
         {
-            if (glowMaterial != null)
+            if (cachedGlowMaterial != null)
             {
-                return glowMaterial;
+                return cachedGlowMaterial;
             }
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
-            if (shader == null)
+            if (glowTemplate != null)
             {
-                shader = Shader.Find("Particles/Additive");
+                cachedGlowMaterial = new Material(glowTemplate);
+            }
+            else
+            {
+                // Fallback если забыли назначить в инспекторе
+                Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+                if (shader == null) shader = Shader.Find("Unlit/Color");
+                cachedGlowMaterial = new Material(shader);
             }
 
-            if (shader == null)
+            cachedGlowMaterial.renderQueue = 3000;
+
+            if (cachedGlowMaterial.HasProperty("_Surface"))
             {
-                shader = Shader.Find("Legacy Shaders/Particles/Additive");
+                cachedGlowMaterial.SetFloat("_Surface", 1f);
             }
 
-            if (shader == null)
+            if (cachedGlowMaterial.HasProperty("_Blend"))
             {
-                shader = Shader.Find("Unlit/Color");
+                cachedGlowMaterial.SetFloat("_Blend", 0f);
             }
 
-            glowMaterial = new Material(shader);
-
-            if (glowMaterial.HasProperty("_Surface"))
+            if (cachedGlowMaterial.HasProperty("_SrcBlend"))
             {
-                glowMaterial.SetFloat("_Surface", 1f);
+                cachedGlowMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
             }
 
-            if (glowMaterial.HasProperty("_Blend"))
+            if (cachedGlowMaterial.HasProperty("_DstBlend"))
             {
-                glowMaterial.SetFloat("_Blend", 0f);
+                cachedGlowMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
             }
 
-            if (glowMaterial.HasProperty("_SrcBlend"))
+            if (cachedGlowMaterial.HasProperty("_ZWrite"))
             {
-                glowMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                cachedGlowMaterial.SetInt("_ZWrite", 0);
             }
 
-            if (glowMaterial.HasProperty("_DstBlend"))
-            {
-                glowMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
-            }
-
-            if (glowMaterial.HasProperty("_ZWrite"))
-            {
-                glowMaterial.SetInt("_ZWrite", 0);
-            }
-
-            glowMaterial.renderQueue = 3000;
+            cachedGlowMaterial.renderQueue = 3000;
             Texture2D glowTex = GetOrCreateGlowTexture();
-            glowMaterial.mainTexture = glowTex;
+            cachedGlowMaterial.mainTexture = glowTex;
 
-            if (glowMaterial.HasProperty("_BaseMap"))
+            if (cachedGlowMaterial.HasProperty("_BaseMap"))
             {
-                glowMaterial.SetTexture("_BaseMap", glowTex);
+                cachedGlowMaterial.SetTexture("_BaseMap", glowTex);
             }
 
-            if (glowMaterial.HasProperty("_MainTex"))
+            if (cachedGlowMaterial.HasProperty("_MainTex"))
             {
-                glowMaterial.SetTexture("_MainTex", glowTex);
+                cachedGlowMaterial.SetTexture("_MainTex", glowTex);
             }
 
-            return glowMaterial;
+            return cachedGlowMaterial;
         }
 
         private Texture2D GetOrCreateGlowTexture()
@@ -1282,21 +1279,17 @@ namespace GlitchRacer
                 return existing;
             }
 
-            if (cachedSolidShader == null)
+            Material mat;
+            if (solidTemplate != null)
             {
-                cachedSolidShader = Shader.Find("Universal Render Pipeline/Unlit");
-                if (cachedSolidShader == null)
-                {
-                    cachedSolidShader = Shader.Find("Unlit/Color");
-                }
-
-                if (cachedSolidShader == null)
-                {
-                    cachedSolidShader = Shader.Find("Sprites/Default");
-                }
+                mat = new Material(solidTemplate);
             }
-
-            Material mat = new(cachedSolidShader);
+            else
+            {
+                Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+                if (shader == null) shader = Shader.Find("Unlit/Color");
+                mat = new Material(shader);
+            }
             if (mat.HasProperty("_BaseColor"))
             {
                 mat.SetColor("_BaseColor", color);
