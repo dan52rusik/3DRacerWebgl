@@ -101,11 +101,6 @@ namespace GlitchRacer
             if (game.State == GlitchRacerGame.SessionState.Playing)
             {
                 DrawControlHint();
-
-                if (RunnerPlayer.UseTouchControls)
-                {
-                    DrawTouchControlZones();
-                }
             }
 
             if (game.State == GlitchRacerGame.SessionState.MainMenu)
@@ -152,7 +147,7 @@ namespace GlitchRacer
 
             CreateHudCard("BrandCard", new Vector2(24f, -24f), new Vector2(340f, 70f), new Color(0.01f, 0.03f, 0.06f, 0.78f), out RectTransform brandRect);
             CreateAccent(brandRect, new Vector2(3f, -3f), new Vector2(3f, 64f), new Color(0.08f, 0.95f, 1f, 0.78f));
-            CreateCanvasText(brandRect, "BrandTitle", new Vector2(22f, -8f), new Vector2(280f, 44f), GlitchRacerLocalization.GameTitle(game.CurrentLanguage), 44, TextAnchor.UpperLeft, out brandTitleText);
+            CreateCanvasText(brandRect, "BrandTitle", new Vector2(22f, -8f), new Vector2(280f, 44f), GlitchRacerLocalization.GameTitle(game.CurrentLanguage), 32, TextAnchor.UpperLeft, out brandTitleText);
 
             CreateHudCard("ScoreCard", new Vector2(24f, -104f), new Vector2(180f, 70f), new Color(0.01f, 0.03f, 0.06f, 0.74f), out RectTransform scoreRect);
             CreateCanvasText(scoreRect, "ScoreLabel", new Vector2(14f, -8f), new Vector2(120f, 16f), GlitchRacerLocalization.ScoreLabel(game.CurrentLanguage), 16, TextAnchor.UpperLeft, out scoreLabelText);
@@ -447,18 +442,15 @@ namespace GlitchRacer
 
         private void DrawTouchControlZones()
         {
-            Rect leftZone = new Rect(0f, Screen.height * 0.5f, Screen.width * 0.5f, Screen.height * 0.5f);
-            Rect rightZone = new Rect(Screen.width * 0.5f, Screen.height * 0.5f, Screen.width * 0.5f, Screen.height * 0.5f);
-
-            DrawSoftCard(leftZone, new Color(0.08f, 0.95f, 1f, 0.05f));
-            DrawSoftCard(rightZone, new Color(1f, 0.24f, 0.72f, 0.05f));
-
-            GUI.Label(new Rect(leftZone.x, leftZone.y + leftZone.height - 86f, leftZone.width, 30f), GlitchRacerLocalization.Left(game.CurrentLanguage), centerStyle);
-            GUI.Label(new Rect(rightZone.x, rightZone.y + rightZone.height - 86f, rightZone.width, 30f), GlitchRacerLocalization.Right(game.CurrentLanguage), centerStyle);
         }
 
         private void DrawControlHint()
         {
+            if (RunnerPlayer.UseTouchControls)
+            {
+                return;
+            }
+
             string hint = GlitchRacerLocalization.ControlHint(RunnerPlayer.UseTouchControls, game.CurrentLanguage);
 
             GUI.Label(new Rect(24f, Screen.height - 52f, 900f, 30f), hint, labelStyle);
@@ -737,7 +729,7 @@ namespace GlitchRacer
 
             heroStyle = new GUIStyle(labelStyle)
             {
-                fontSize = 38
+                fontSize = 30
             };
 
             centerStyle = new GUIStyle(labelStyle)
