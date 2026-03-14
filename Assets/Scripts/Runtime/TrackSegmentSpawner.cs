@@ -84,13 +84,20 @@ namespace GlitchRacer
                 // Ставим сегмент ровно в конец очереди, используя текущий nextSpawnZ
                 segment.transform.position = new Vector3(0f, 0f, nextSpawnZ);
 
-                ClearSegmentEntities(segment.transform);
-                if (!chapterRushActive)
+                try
                 {
-                    PopulateSegment(segment.transform, segmentIndex);
-                }
+                    ClearSegmentEntities(segment.transform);
+                    if (!chapterRushActive)
+                    {
+                        PopulateSegment(segment.transform, segmentIndex);
+                    }
 
-                ApplySegmentIntegrity(segment.transform, lastIntegrityTier, segmentIndex);
+                    ApplySegmentIntegrity(segment.transform, lastIntegrityTier, segmentIndex);
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[TrackSegmentSpawner] Error updating segment {segmentIndex}: {ex}");
+                }
 
                 activeSegments.Add(segment);
 
@@ -113,10 +120,17 @@ namespace GlitchRacer
                 GameObject segment = activeSegments[i];
                 segment.transform.position = new Vector3(0f, 0f, nextSpawnZ);
 
-                ClearSegmentEntities(segment.transform);
-                if (!lastChapterRushState)
+                try
                 {
-                    PopulateSegment(segment.transform, segmentIndex);
+                    ClearSegmentEntities(segment.transform);
+                    if (!lastChapterRushState)
+                    {
+                        PopulateSegment(segment.transform, segmentIndex);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[TrackSegmentSpawner] Error populated reset track segment {segmentIndex}: {ex}");
                 }
 
                 nextSpawnZ += segmentLength;
@@ -145,10 +159,17 @@ namespace GlitchRacer
                 }
 
                 Transform segment = activeSegments[i].transform;
-                ClearSegmentEntities(segment);
-                if (!chapterRushActive)
+                try
                 {
-                    PopulateSegment(segment, Mathf.Max(0, segmentIndex - activeSegments.Count + i));
+                    ClearSegmentEntities(segment);
+                    if (!chapterRushActive)
+                    {
+                        PopulateSegment(segment, Mathf.Max(0, segmentIndex - activeSegments.Count + i));
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[TrackSegmentSpawner] Error in RefreshSegmentEntities: {ex}");
                 }
             }
         }
@@ -340,7 +361,14 @@ namespace GlitchRacer
             {
                 GameObject segmentRoot = new($"TrackSegment_{i}");
                 segmentRoot.transform.SetParent(transform, false);
-                CreateTrackVisual(segmentRoot.transform, i);
+                try
+                {
+                    CreateTrackVisual(segmentRoot.transform, i);
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[TrackSegmentSpawner] Error creating visual for segment {i}: {ex}");
+                }
                 activeSegments.Add(segmentRoot);
             }
         }
@@ -934,7 +962,10 @@ namespace GlitchRacer
             entity.transform.localScale = scale;
 
             Collider collider = entity.GetComponent<Collider>();
-            collider.isTrigger = true;
+            if (collider != null)
+            {
+                collider.isTrigger = true;
+            }
 
             TrackEntity trackEntity = entity.AddComponent<TrackEntity>();
             trackEntity.Setup(type, amount, glitchDuration, glitchType);
