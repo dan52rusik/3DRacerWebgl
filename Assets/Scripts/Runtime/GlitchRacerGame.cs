@@ -41,6 +41,7 @@ namespace GlitchRacer
         private TrackSegmentSpawner spawner;
         private GlitchCameraRig cameraRig;
         private GlitchRacerHud hud;
+        private GlitchSynthEngine audioSynth;
         private GlitchRacerSaveData saveData;
 
         public float CurrentRam { get; private set; }
@@ -94,12 +95,13 @@ namespace GlitchRacer
 
         // FIX: Configure теперь НЕ вызывает EnterMainMenu().
         // Bootstrap сам вызовет EnterMainMenu() после Configure(), когда все ссылки уже заданы.
-        public void Configure(RunnerPlayer playerController, TrackSegmentSpawner trackSpawner, GlitchCameraRig rig, GlitchRacerHud gameHud)
+        public void Configure(RunnerPlayer playerController, TrackSegmentSpawner trackSpawner, GlitchCameraRig rig, GlitchRacerHud gameHud, GlitchSynthEngine gameSynth)
         {
             player = playerController;
             spawner = trackSpawner;
             cameraRig = rig;
             hud = gameHud;
+            audioSynth = gameSynth;
         }
 
         private void Awake()
@@ -154,6 +156,7 @@ namespace GlitchRacer
             }
 
             CurrentRam = Mathf.Clamp(CurrentRam + amount, 0f, maxRam);
+            audioSynth?.PlayPickupSound();
         }
 
         public void HitObstacle(float ramDamage)
@@ -165,6 +168,7 @@ namespace GlitchRacer
 
             CurrentRam = Mathf.Max(0f, CurrentRam - ramDamage);
             cameraRig?.Punch();
+            audioSynth?.PlayDamageSound();
 
             if (CurrentRam <= 0f)
             {
@@ -200,6 +204,7 @@ namespace GlitchRacer
             AddScore(bonusScore);
             AddRam(8f);
             cameraRig?.Punch();
+            audioSynth?.PlayDamageSound(); // plays a cool crunchy noise good for glitches
         }
 
         public void CollectDataShard(float value)
@@ -211,6 +216,7 @@ namespace GlitchRacer
 
             CollectedDataShards++;
             AddScore(value);
+            audioSynth?.PlayPickupSound();
         }
 
         public void StartGame()
@@ -370,6 +376,7 @@ namespace GlitchRacer
         private void EndRun()
         {
             State = SessionState.GameOver;
+            audioSynth?.PlayGameOverSound();
             LastRunCoinsReward = CalculateCoinsReward();
             saveData.coins += LastRunCoinsReward;
             saveData.bestScore = Mathf.Max(saveData.bestScore, Score);

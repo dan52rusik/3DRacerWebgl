@@ -61,6 +61,7 @@ namespace GlitchRacer
             GlitchRacerGame game = GetOrAddComponent<GlitchRacerGame>(root);
             TrackSegmentSpawner spawner = GetOrAddComponent<TrackSegmentSpawner>(root);
             GlitchRacerHud hud = GetOrAddComponent<GlitchRacerHud>(root);
+            GlitchSynthEngine synth = GetOrAddComponent<GlitchSynthEngine>(root);
 
             Camera camera = Camera.main;
             if (camera == null)
@@ -117,9 +118,10 @@ namespace GlitchRacer
             spawner.Configure(game);
             rig.Configure(game, player.transform);
             hud.Configure(game);
+            synth.Configure(game);
             player.Configure(game);
             player.GetComponent<VirusCarEffects>()?.Configure(game);
-            game.Configure(player, spawner, rig, hud);
+            game.Configure(player, spawner, rig, hud, synth);
 
             if (Application.isPlaying)
             {
