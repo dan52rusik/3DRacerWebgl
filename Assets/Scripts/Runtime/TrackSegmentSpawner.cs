@@ -142,6 +142,25 @@ namespace GlitchRacer
             ApplyTrackIntegrityState(lastIntegrityTier);
         }
 
+        public void ClearImminentObstacles()
+        {
+            for (int i = 0; i < activeSegments.Count; i++)
+            {
+                Transform segment = activeSegments[i].transform;
+                if (segment.position.z > -15f && segment.position.z < segmentLength * 2f)
+                {
+                    TrackEntity[] entities = segment.GetComponentsInChildren<TrackEntity>();
+                    for (int j = 0; j < entities.Length; j++)
+                    {
+                        if (entities[j].Type == TrackEntityType.Obstacle || entities[j].Type == TrackEntityType.Glitch)
+                        {
+                            Destroy(entities[j].gameObject);
+                        }
+                    }
+                }
+            }
+        }
+
         private void ClearSegmentEntities(Transform segmentRoot)
         {
             TrackEntity[] entities = segmentRoot.GetComponentsInChildren<TrackEntity>();

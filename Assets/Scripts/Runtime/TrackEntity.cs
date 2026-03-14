@@ -19,6 +19,8 @@ namespace GlitchRacer
 
         private bool consumed;
 
+        public TrackEntityType Type => entityType;
+
         public void Setup(TrackEntityType type, float value, float duration = 5f, GlitchRacerGame.GlitchType appliedGlitch = GlitchRacerGame.GlitchType.InvertControls)
         {
             entityType = type;

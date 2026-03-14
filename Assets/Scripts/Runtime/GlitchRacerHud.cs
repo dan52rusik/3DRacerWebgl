@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using YG;
 
 namespace GlitchRacer
 {
@@ -563,7 +564,7 @@ namespace GlitchRacer
 
         private void DrawGameOver()
         {
-            Rect panel = new Rect(Screen.width * 0.5f - 260f, Screen.height * 0.5f - 170f, 520f, 340f);
+            Rect panel = new Rect(Screen.width * 0.5f - 260f, Screen.height * 0.5f - 190f, 520f, 380f);
             DrawPanel(panel, "System Failure");
 
             GUI.Label(new Rect(panel.x + 24f, panel.y + 76f, panel.width - 48f, 30f), $"Score: {Mathf.RoundToInt(game.Score):N0}", labelStyle);
@@ -572,12 +573,24 @@ namespace GlitchRacer
             GUI.Label(new Rect(panel.x + 24f, panel.y + 172f, panel.width - 48f, 30f), $"Coins earned: +{game.LastRunCoinsReward:N0}", labelStyle);
             GUI.Label(new Rect(panel.x + 24f, panel.y + 214f, panel.width - 48f, 54f), "Leaderboard metric: run distance in meters. Use this when sending results to Yandex leaderboards.", subStyle);
 
-            if (DrawActionButton(new Rect(panel.x + 24f, panel.y + panel.height - 64f, (panel.width - 60f) * 0.5f, 42f), "Run Again", true))
+            float buttonY = panel.y + panel.height - 108f;
+
+            if (!game.HasUsedRevive)
+            {
+                if (DrawActionButton(new Rect(panel.x + 24f, buttonY, panel.width - 48f, 42f), "Revive (Watch Ad)", true))
+                {
+#if RewardedAdv_yg
+                    YG2.RewardedAdvShow("Revive");
+#endif
+                }
+            }
+
+            if (DrawActionButton(new Rect(panel.x + 24f, buttonY + 50f, (panel.width - 60f) * 0.5f, 42f), "Run Again"))
             {
                 game.StartGame();
             }
 
-            if (DrawActionButton(new Rect(panel.center.x + 6f, panel.y + panel.height - 64f, (panel.width - 60f) * 0.5f, 42f), "Main Menu"))
+            if (DrawActionButton(new Rect(panel.center.x + 6f, buttonY + 50f, (panel.width - 60f) * 0.5f, 42f), "Main Menu"))
             {
                 game.EnterMainMenu();
             }

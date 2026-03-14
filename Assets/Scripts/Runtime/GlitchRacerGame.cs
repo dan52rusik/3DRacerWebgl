@@ -55,6 +55,7 @@ namespace GlitchRacer
         public int Coins => saveData.coins;
         public int CollectedDataShards { get; private set; }
         public int LastRunCoinsReward { get; private set; }
+        public bool HasUsedRevive { get; private set; }
         public SessionState State { get; private set; }
         public bool IsGameOver => State == SessionState.GameOver;
         public bool IsMenuVisible => State == SessionState.MainMenu || State == SessionState.Shop || State == SessionState.Settings;
@@ -107,6 +108,7 @@ namespace GlitchRacer
             saveData = GlitchRacerSaveSystem.Load();
 #if PlayerStats_yg
             YG2.onGetSDKData += HandleCloudSaveLoaded;
+            YG2.onRewardAdv += OnRewardAdv;
 #endif
             // FIX: EnterMainMenu() убран отсюда. Раньше вызывался здесь когда player/spawner/rig/hud
             // ещё не были назначены через Configure() — все вызовы внутри (player?.ResetRunner() и т.д.)
@@ -117,7 +119,16 @@ namespace GlitchRacer
         {
 #if PlayerStats_yg
             YG2.onGetSDKData -= HandleCloudSaveLoaded;
+            YG2.onRewardAdv -= OnRewardAdv;
 #endif
+        }
+
+        private void OnRewardAdv(string id)
+        {
+            if (id == "Revive")
+            {
+                ReviveFromAd();
+            }
         }
 
         private void Update()
@@ -161,6 +172,22 @@ namespace GlitchRacer
             }
         }
 
+        private void ReviveFromAd()
+        {
+            if (State != SessionState.GameOver)
+            {
+                return;
+            }
+
+            State = SessionState.Playing;
+            HasUsedRevive = true;
+            CurrentRam = maxRam;
+            glitchTimer = 0f;
+            activeGlitch = GlitchType.None;
+            player?.SetControlMode(true);
+            spawner?.ClearImminentObstacles();
+        }
+
         public void TriggerGlitch(float duration, float bonusScore, GlitchType glitchType)
         {
             if (State != SessionState.Playing)
@@ -189,6 +216,7 @@ namespace GlitchRacer
         public void StartGame()
         {
             State = SessionState.Playing;
+            HasUsedRevive = false;
             ResetRunRuntime();
             player?.SetControlMode(true);
             spawner?.ResetTrack();
@@ -199,6 +227,7 @@ namespace GlitchRacer
         {
             State = SessionState.MainMenu;
             LastRunCoinsReward = 0;
+            HasUsedRevive = false;
             ResetRunRuntime();
             player?.SetControlMode(false);
             spawner?.ResetTrack();
@@ -347,6 +376,8 @@ namespace GlitchRacer
             saveData.bestDistance = Mathf.Max(saveData.bestDistance, CurrentDistance);
             saveData.totalDistance += CurrentDistance;
             SaveProgress();
+
+            YG2.InterstitialAdvShow();
         }
 
         private void SaveProgress()
