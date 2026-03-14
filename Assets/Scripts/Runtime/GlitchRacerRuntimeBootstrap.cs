@@ -5,9 +5,12 @@ namespace GlitchRacer
 {
     public static class GlitchRacerRuntimeBootstrap
     {
+        private static bool bootstrapPending = true;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void RegisterSceneCallbacks()
         {
+            bootstrapPending = true;
             SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -15,12 +18,23 @@ namespace GlitchRacer
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void EnsureBootstrap()
         {
-            BuildIntoCurrentScene(false);
+            TryBootstrapCurrentScene();
         }
 
         private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            EnsureBootstrap();
+            TryBootstrapCurrentScene();
+        }
+
+        private static void TryBootstrapCurrentScene()
+        {
+            if (!bootstrapPending)
+            {
+                return;
+            }
+
+            bootstrapPending = false;
+            BuildIntoCurrentScene(false);
         }
 
         public static GlitchRacerGame BuildIntoCurrentScene(bool clearScene)
@@ -43,6 +57,7 @@ namespace GlitchRacer
             CleanupDuplicateNamedObjects("RightTrailLine");
 
             GameObject root = FindOrCreateRoot();
+            CleanupGeneratedChildren(root.transform);
             GlitchRacerGame game = GetOrAddComponent<GlitchRacerGame>(root);
             TrackSegmentSpawner spawner = GetOrAddComponent<TrackSegmentSpawner>(root);
             GlitchRacerHud hud = GetOrAddComponent<GlitchRacerHud>(root);
@@ -260,6 +275,26 @@ namespace GlitchRacer
 #endif
                 DestroyObject(objects[i]);
             }
+        }
+
+        private static void CleanupGeneratedChildren(Transform root)
+        {
+            for (int i = root.childCount - 1; i >= 0; i--)
+            {
+                Transform child = root.GetChild(i);
+                if (!ShouldDestroyGeneratedChild(child.name))
+                {
+                    continue;
+                }
+
+                DestroyObject(child.gameObject);
+            }
+        }
+
+        private static bool ShouldDestroyGeneratedChild(string childName)
+        {
+            return childName.StartsWith("TrackSegment_")
+                || childName == "GlitchCanvasHud";
         }
 
         private static T GetOrAddComponent<T>(GameObject target) where T : Component

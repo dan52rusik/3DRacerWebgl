@@ -41,6 +41,12 @@ namespace GlitchRacer
                 return;
             }
 
+            EnsureSegmentPool();
+            if (activeSegments.Count == 0)
+            {
+                return;
+            }
+
             bool chapterRushActive = game.IsChapterRush;
             if (chapterRushActive != lastChapterRushState)
             {
@@ -87,16 +93,7 @@ namespace GlitchRacer
 
         public void ResetTrack()
         {
-            if (activeSegments.Count == 0)
-            {
-                for (int i = 0; i < visibleSegments + 1; i++)
-                {
-                    GameObject segmentRoot = new($"TrackSegment_{i}");
-                    segmentRoot.transform.SetParent(transform, false);
-                    CreateTrackVisual(segmentRoot.transform, i);
-                    activeSegments.Add(segmentRoot);
-                }
-            }
+            RebuildSegmentPoolIfNeeded();
 
             nextSpawnZ = 0f;
             segmentIndex = 0;
@@ -134,6 +131,11 @@ namespace GlitchRacer
         {
             for (int i = 0; i < activeSegments.Count; i++)
             {
+                if (activeSegments[i] == null)
+                {
+                    continue;
+                }
+
                 Transform segment = activeSegments[i].transform;
                 ClearSegmentEntities(segment);
                 if (!chapterRushActive)
@@ -295,7 +297,64 @@ namespace GlitchRacer
         {
             for (int segment = 0; segment < activeSegments.Count; segment++)
             {
+                if (activeSegments[segment] == null)
+                {
+                    continue;
+                }
+
                 ApplySegmentIntegrity(activeSegments[segment].transform, integrityTier, segment);
+            }
+        }
+
+        private void EnsureSegmentPool()
+        {
+            for (int i = activeSegments.Count - 1; i >= 0; i--)
+            {
+                if (activeSegments[i] == null)
+                {
+                    activeSegments.RemoveAt(i);
+                }
+            }
+
+            RebuildSegmentPoolIfNeeded();
+        }
+
+        private void RebuildSegmentPoolIfNeeded()
+        {
+            if (activeSegments.Count > 0)
+            {
+                return;
+            }
+
+            CleanupSceneSegments();
+
+            for (int i = 0; i < visibleSegments + 1; i++)
+            {
+                GameObject segmentRoot = new($"TrackSegment_{i}");
+                segmentRoot.transform.SetParent(transform, false);
+                CreateTrackVisual(segmentRoot.transform, i);
+                activeSegments.Add(segmentRoot);
+            }
+        }
+
+        private void CleanupSceneSegments()
+        {
+            for (int i = transform.childCount - 1; i >= 0; i--)
+            {
+                Transform child = transform.GetChild(i);
+                if (!child.name.StartsWith("TrackSegment_"))
+                {
+                    continue;
+                }
+
+#if UNITY_EDITOR
+                if (!Application.isPlaying)
+                {
+                    DestroyImmediate(child.gameObject);
+                    continue;
+                }
+#endif
+                Destroy(child.gameObject);
             }
         }
 

@@ -196,7 +196,7 @@ namespace GlitchRacer
             float chapterFactor = game.IsChapterRush ? 1f : 0f;
             float chaos = Mathf.Clamp01(speedFactor + (lateralFactor * 0.7f) + (glitchFactor * 0.65f) + (chapterFactor * 0.8f));
 
-            bool active = game.State == GlitchRacerGame.SessionState.Playing || game.IsMenuVisible;
+            bool active = game.State == GlitchRacerGame.SessionState.Playing;
             UpdateSparkEmitter(leftSparks, active, chaos, lateralFactor, glitchFactor);
             UpdateSparkEmitter(rightSparks, active, chaos, lateralFactor, glitchFactor);
             UpdateTrailLine(leftTrailLine, leftTrailPoints, leftRearAnchor, active, chaos, lateralFactor, glitchFactor, new Color(0.08f, 0.95f, 1f));
