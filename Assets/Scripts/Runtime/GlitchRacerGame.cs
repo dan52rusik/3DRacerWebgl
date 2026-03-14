@@ -1,4 +1,5 @@
 using UnityEngine;
+using YG;
 #if PlayerStats_yg
 using YG;
 #endif
@@ -58,6 +59,7 @@ namespace GlitchRacer
         public int LastRunCoinsReward { get; private set; }
         public bool HasUsedRevive { get; private set; }
         public SessionState State { get; private set; }
+        public string CurrentLanguage => GlitchRacerLocalization.NormalizeLanguage(saveData.languageCode);
         public bool IsGameOver => State == SessionState.GameOver;
         public bool IsMenuVisible => State == SessionState.MainMenu || State == SessionState.Shop || State == SessionState.Settings;
         public bool IsInputEnabled => State == SessionState.Playing;
@@ -71,14 +73,7 @@ namespace GlitchRacer
         public float ChapterRushTimeRemaining => chapterRushTimer;
         public float GlitchTimeRemaining => glitchTimer;
         public GlitchType ActiveGlitch => glitchTimer > 0f ? activeGlitch : GlitchType.None;
-        public string ActiveGlitchLabel => ActiveGlitch switch
-        {
-            GlitchType.InvertControls => "controls inverted",
-            GlitchType.StaticNoise => "signal noise",
-            GlitchType.DrunkVision => "vision drifting",
-            GlitchType.DrugsTrip => "drugs trip",
-            _ => "stable"
-        };
+        public string ActiveGlitchLabel => GlitchRacerLocalization.ActiveGlitchLabel(ActiveGlitch, CurrentLanguage);
         public float FuelDrainMultiplier => Mathf.Max(0.55f, 1f - (saveData.fuelUpgradeLevel * 0.08f));
         public float ScoreMultiplier => 1f + (saveData.scoreUpgradeLevel * 0.12f);
         public int FuelUpgradeLevel => saveData.fuelUpgradeLevel;
@@ -108,9 +103,13 @@ namespace GlitchRacer
         {
             Application.targetFrameRate = 60;
             saveData = GlitchRacerSaveSystem.Load();
+            InitializeLanguage();
 #if PlayerStats_yg
             YG2.onGetSDKData += HandleCloudSaveLoaded;
             YG2.onRewardAdv += OnRewardAdv;
+#endif
+#if Localization_yg
+            YG2.onSwitchLang += HandleLanguageSwitched;
 #endif
             // FIX: EnterMainMenu() убран отсюда. Раньше вызывался здесь когда player/spawner/rig/hud
             // ещё не были назначены через Configure() — все вызовы внутри (player?.ResetRunner() и т.д.)
@@ -122,6 +121,9 @@ namespace GlitchRacer
 #if PlayerStats_yg
             YG2.onGetSDKData -= HandleCloudSaveLoaded;
             YG2.onRewardAdv -= OnRewardAdv;
+#endif
+#if Localization_yg
+            YG2.onSwitchLang -= HandleLanguageSwitched;
 #endif
         }
 
@@ -267,6 +269,11 @@ namespace GlitchRacer
             SaveProgress();
         }
 
+        public void ToggleLanguage()
+        {
+            SetLanguage(CurrentLanguage == "ru" ? "en" : "ru");
+        }
+
         public bool TryBuyFuelUpgrade()
         {
             if (saveData.coins < FuelUpgradeCost)
@@ -392,6 +399,50 @@ namespace GlitchRacer
             GlitchRacerSaveSystem.Save(saveData);
         }
 
+        private void InitializeLanguage()
+        {
+            string language = string.IsNullOrEmpty(saveData.languageCode)
+#if Localization_yg
+                ? GlitchRacerLocalization.NormalizeLanguage(YG2.lang)
+#else
+                ? "en"
+#endif
+                : GlitchRacerLocalization.NormalizeLanguage(saveData.languageCode);
+
+            saveData.languageCode = language;
+#if Localization_yg
+            if (YG2.lang != language)
+            {
+                YG2.SwitchLanguage(language);
+            }
+#endif
+        }
+
+        private void SetLanguage(string language)
+        {
+            string normalized = GlitchRacerLocalization.NormalizeLanguage(language);
+#if Localization_yg
+            if (YG2.lang != normalized)
+            {
+                YG2.SwitchLanguage(normalized);
+                return;
+            }
+#endif
+            HandleLanguageSwitched(normalized);
+        }
+
+        private void HandleLanguageSwitched(string language)
+        {
+            string normalized = GlitchRacerLocalization.NormalizeLanguage(language);
+            if (saveData != null)
+            {
+                saveData.languageCode = normalized;
+                SaveProgress();
+            }
+
+            hud?.RefreshLocalization();
+        }
+
         private void TriggerChapterRush()
         {
             chapterRushTimer = chapterRushDuration;
@@ -407,6 +458,8 @@ namespace GlitchRacer
             }
 
             saveData = GlitchRacerSaveSystem.Load();
+            InitializeLanguage();
+            hud?.RefreshLocalization();
         }
 
         private float GetChapterRushSpeedFactor()
@@ -428,6 +481,7 @@ namespace GlitchRacer
         public int scoreUpgradeLevel;
         public bool musicEnabled = true;
         public bool sfxEnabled = true;
+        public string languageCode;
     }
 
     public static class GlitchRacerSaveSystem
@@ -443,6 +497,7 @@ namespace GlitchRacer
         private const string ScoreUpgradeKey = "gr_score_upgrade";
         private const string MusicEnabledKey = "gr_music_enabled";
         private const string SfxEnabledKey = "gr_sfx_enabled";
+        private const string LanguageKey = "gr_language";
 #endif
 
         public static GlitchRacerSaveData Load()
@@ -500,7 +555,8 @@ namespace GlitchRacer
                 fuelUpgradeLevel = YG2.GetState(FuelUpgradeKey),
                 scoreUpgradeLevel = YG2.GetState(ScoreUpgradeKey),
                 musicEnabled = YG2.GetState(MusicEnabledKey) != 0,
-                sfxEnabled = YG2.GetState(SfxEnabledKey) != 0
+                sfxEnabled = YG2.GetState(SfxEnabledKey) != 0,
+                languageCode = YG2.GetState(LanguageKey) == 1 ? "ru" : "en"
             };
         }
 
@@ -519,6 +575,7 @@ namespace GlitchRacer
             stats[ScoreUpgradeKey] = data.scoreUpgradeLevel;
             stats[MusicEnabledKey] = data.musicEnabled ? 1 : 0;
             stats[SfxEnabledKey] = data.sfxEnabled ? 1 : 0;
+            stats[LanguageKey] = GlitchRacerLocalization.NormalizeLanguage(data.languageCode) == "ru" ? 1 : 0;
 
             YG2.SetAllStats(stats);
         }

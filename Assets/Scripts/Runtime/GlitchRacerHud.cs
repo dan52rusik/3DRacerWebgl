@@ -9,10 +9,15 @@ namespace GlitchRacer
         private GlitchRacerGame game;
         private GameObject canvasRoot;
         private Text scoreText;
+        private Text scoreLabelText;
         private Text distanceText;
+        private Text distanceLabelText;
         private Text ramText;
+        private Text ramLabelText;
         private Text coinsText;
+        private Text coinsLabelText;
         private Text glitchText;
+        private Text brandTitleText;
         private Image ramFill;
         private Texture2D fillTexture;
         private GUIStyle labelStyle;
@@ -31,6 +36,11 @@ namespace GlitchRacer
         {
             game = gameManager;
             BuildCanvasHud();
+        }
+
+        public void RefreshLocalization()
+        {
+            RefreshStaticHudTexts();
         }
 
         private void Awake()
@@ -142,23 +152,23 @@ namespace GlitchRacer
 
             CreateHudCard("BrandCard", new Vector2(24f, -24f), new Vector2(340f, 70f), new Color(0.01f, 0.03f, 0.06f, 0.78f), out RectTransform brandRect);
             CreateAccent(brandRect, new Vector2(3f, -3f), new Vector2(3f, 64f), new Color(0.08f, 0.95f, 1f, 0.78f));
-            CreateCanvasText(brandRect, "BrandTitle", new Vector2(22f, -8f), new Vector2(280f, 44f), "GLITCH RACER", 44, TextAnchor.UpperLeft, out _);
+            CreateCanvasText(brandRect, "BrandTitle", new Vector2(22f, -8f), new Vector2(280f, 44f), GlitchRacerLocalization.GameTitle(game.CurrentLanguage), 44, TextAnchor.UpperLeft, out brandTitleText);
 
             CreateHudCard("ScoreCard", new Vector2(24f, -104f), new Vector2(180f, 70f), new Color(0.01f, 0.03f, 0.06f, 0.74f), out RectTransform scoreRect);
-            CreateCanvasText(scoreRect, "ScoreLabel", new Vector2(14f, -8f), new Vector2(120f, 16f), "SCORE", 16, TextAnchor.UpperLeft, out _);
+            CreateCanvasText(scoreRect, "ScoreLabel", new Vector2(14f, -8f), new Vector2(120f, 16f), GlitchRacerLocalization.ScoreLabel(game.CurrentLanguage), 16, TextAnchor.UpperLeft, out scoreLabelText);
             CreateCanvasText(scoreRect, "ScoreValue", new Vector2(14f, -26f), new Vector2(146f, 28f), "0", 30, TextAnchor.UpperLeft, out scoreText);
 
             CreateHudCard("DistanceCard", new Vector2(214f, -104f), new Vector2(180f, 70f), new Color(0.01f, 0.03f, 0.06f, 0.74f), out RectTransform distanceRect);
-            CreateCanvasText(distanceRect, "DistanceLabel", new Vector2(14f, -8f), new Vector2(120f, 16f), "DISTANCE", 16, TextAnchor.UpperLeft, out _);
+            CreateCanvasText(distanceRect, "DistanceLabel", new Vector2(14f, -8f), new Vector2(120f, 16f), GlitchRacerLocalization.DistanceLabel(game.CurrentLanguage), 16, TextAnchor.UpperLeft, out distanceLabelText);
             CreateCanvasText(distanceRect, "DistanceValue", new Vector2(14f, -26f), new Vector2(146f, 28f), "0 m", 30, TextAnchor.UpperLeft, out distanceText);
 
             CreateHudCard("RamCard", new Vector2(414f, -24f), new Vector2(380f, 60f), new Color(0.01f, 0.03f, 0.06f, 0.74f), out RectTransform ramRect);
-            CreateCanvasText(ramRect, "RamLabel", new Vector2(14f, -6f), new Vector2(180f, 16f), "RAM STABILITY", 16, TextAnchor.UpperLeft, out _);
+            CreateCanvasText(ramRect, "RamLabel", new Vector2(14f, -6f), new Vector2(180f, 16f), GlitchRacerLocalization.RamStability(game.CurrentLanguage), 16, TextAnchor.UpperLeft, out ramLabelText);
             CreateRamBar(ramRect);
 
             CreateHudCard("CoinsCard", new Vector2(-24f, -24f), new Vector2(210f, 60f), new Color(0.02f, 0.04f, 0.07f, 0.8f), out RectTransform coinsRect, true);
             CreateAccent(coinsRect, new Vector2(0f, -3f), new Vector2(3f, 54f), new Color(1f, 0.8f, 0.2f, 0.82f));
-            CreateCanvasText(coinsRect, "CoinsLabel", new Vector2(16f, -8f), new Vector2(120f, 16f), "WALLET", 16, TextAnchor.UpperLeft, out _);
+            CreateCanvasText(coinsRect, "CoinsLabel", new Vector2(16f, -8f), new Vector2(120f, 16f), GlitchRacerLocalization.WalletLabel(game.CurrentLanguage), 16, TextAnchor.UpperLeft, out coinsLabelText);
             CreateCanvasText(coinsRect, "CoinsValue", new Vector2(16f, -24f), new Vector2(150f, 24f), "0", 28, TextAnchor.UpperLeft, out coinsText);
 
             CreateHudCard("GlitchCard", new Vector2(414f, -92f), new Vector2(380f, 40f), new Color(0.18f, 0.05f, 0.24f, 0.74f), out RectTransform glitchRect);
@@ -175,6 +185,11 @@ namespace GlitchRacer
             coinsText = null;
             glitchText = null;
             ramFill = null;
+            scoreLabelText = null;
+            distanceLabelText = null;
+            ramLabelText = null;
+            coinsLabelText = null;
+            brandTitleText = null;
 
             for (int i = transform.childCount - 1; i >= 0; i--)
             {
@@ -304,7 +319,7 @@ namespace GlitchRacer
 
             if (distanceText != null)
             {
-                distanceText.text = $"{Mathf.FloorToInt(game.CurrentDistance)} m";
+                distanceText.text = GlitchRacerLocalization.Meters(Mathf.FloorToInt(game.CurrentDistance), game.CurrentLanguage);
             }
 
             if (coinsText != null)
@@ -332,9 +347,24 @@ namespace GlitchRacer
                 glitchText.transform.parent.gameObject.SetActive(showGlitch);
                 if (showGlitch)
                 {
-                    glitchText.text = $"GLITCH {game.GlitchTimeRemaining:0.0}s | {game.ActiveGlitchLabel}";
+                    glitchText.text = GlitchRacerLocalization.GlitchTimer(game.GlitchTimeRemaining, game.ActiveGlitchLabel, game.CurrentLanguage);
                 }
             }
+        }
+
+        private void RefreshStaticHudTexts()
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            string language = game.CurrentLanguage;
+            if (scoreLabelText != null) scoreLabelText.text = GlitchRacerLocalization.ScoreLabel(language);
+            if (distanceLabelText != null) distanceLabelText.text = GlitchRacerLocalization.DistanceLabel(language);
+            if (ramLabelText != null) ramLabelText.text = GlitchRacerLocalization.RamStability(language);
+            if (coinsLabelText != null) coinsLabelText.text = GlitchRacerLocalization.WalletLabel(language);
+            if (brandTitleText != null) brandTitleText.text = GlitchRacerLocalization.GameTitle(language);
         }
 
         private void DrawBackdrop()
@@ -410,7 +440,7 @@ namespace GlitchRacer
             if (Mathf.FloorToInt(Time.time * 8f) % 2 == 0)
             {
                 GUI.color = new Color(1f, 0.15f, 0.25f, 0.95f);
-                GUI.Label(new Rect(0f, Screen.height * 0.28f, Screen.width, 60f), "CRITICAL SYSTEM INSTABILITY", centerStyle);
+                GUI.Label(new Rect(0f, Screen.height * 0.28f, Screen.width, 60f), GlitchRacerLocalization.CriticalInstability(game.CurrentLanguage), centerStyle);
                 GUI.color = Color.white;
             }
         }
@@ -423,15 +453,13 @@ namespace GlitchRacer
             DrawSoftCard(leftZone, new Color(0.08f, 0.95f, 1f, 0.05f));
             DrawSoftCard(rightZone, new Color(1f, 0.24f, 0.72f, 0.05f));
 
-            GUI.Label(new Rect(leftZone.x, leftZone.y + leftZone.height - 86f, leftZone.width, 30f), "LEFT", centerStyle);
-            GUI.Label(new Rect(rightZone.x, rightZone.y + rightZone.height - 86f, rightZone.width, 30f), "RIGHT", centerStyle);
+            GUI.Label(new Rect(leftZone.x, leftZone.y + leftZone.height - 86f, leftZone.width, 30f), GlitchRacerLocalization.Left(game.CurrentLanguage), centerStyle);
+            GUI.Label(new Rect(rightZone.x, rightZone.y + rightZone.height - 86f, rightZone.width, 30f), GlitchRacerLocalization.Right(game.CurrentLanguage), centerStyle);
         }
 
         private void DrawControlHint()
         {
-            string hint = RunnerPlayer.UseTouchControls
-                ? "Tap left or right side of the screen to switch lanes."
-                : "A/D or Left/Right to switch lanes.";
+            string hint = GlitchRacerLocalization.ControlHint(RunnerPlayer.UseTouchControls, game.CurrentLanguage);
 
             GUI.Label(new Rect(24f, Screen.height - 52f, 900f, 30f), hint, labelStyle);
         }
@@ -476,46 +504,48 @@ namespace GlitchRacer
             DrawPanelChrome(panel, new Color(0.01f, 0.02f, 0.04f, 0.88f), new Color(0.08f, 0.95f, 1f, 0.26f), new Color(1f, 0.24f, 0.72f, 0.1f));
             float buttonY = Mathf.Min(panel.y + 372f, panel.yMax - 160f);
 
-            GUI.Label(new Rect(panel.x + 28f, panel.y + 22f, panel.width - 56f, 20f), "BROKEN DATA ABYSS // VIRUS RUNNER", tinyStyle);
-            GUI.Label(new Rect(panel.x + 28f, panel.y + 38f, panel.width - 56f, 46f), "GLITCH RACER", heroStyle);
-            GUI.Label(new Rect(panel.x + 28f, panel.y + 90f, panel.width - 56f, 54f), "Dive through a broken data abyss, survive system glitches, and convert each run into permanent upgrades.", subStyle);
+            string language = game.CurrentLanguage;
+            GUI.Label(new Rect(panel.x + 28f, panel.y + 22f, panel.width - 56f, 20f), GlitchRacerLocalization.BrandTagline(language), tinyStyle);
+            GUI.Label(new Rect(panel.x + 28f, panel.y + 38f, panel.width - 56f, 46f), GlitchRacerLocalization.GameTitle(language), heroStyle);
+            GUI.Label(new Rect(panel.x + 28f, panel.y + 90f, panel.width - 56f, 54f), GlitchRacerLocalization.MainMenuDescription(language), subStyle);
 
-            DrawStatChip(new Rect(panel.x + 28f, panel.y + 164f, panel.width - 56f, 44f), "WALLET", $"{game.Coins:N0} coins");
-            DrawStatChip(new Rect(panel.x + 28f, panel.y + 214f, panel.width - 56f, 44f), "BEST SCORE", Mathf.RoundToInt(game.BestScore).ToString("N0"));
-            DrawStatChip(new Rect(panel.x + 28f, panel.y + 264f, panel.width - 56f, 44f), "BEST DISTANCE", $"{Mathf.RoundToInt(game.BestDistance):N0} m");
-            DrawStatChip(new Rect(panel.x + 28f, panel.y + 314f, panel.width - 56f, 44f), "TOTAL DISTANCE", $"{Mathf.RoundToInt(game.TotalDistance):N0} m");
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 164f, panel.width - 56f, 44f), GlitchRacerLocalization.WalletLabel(language), GlitchRacerLocalization.WalletValue(game.Coins, language));
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 214f, panel.width - 56f, 44f), GlitchRacerLocalization.BestScore(language), Mathf.RoundToInt(game.BestScore).ToString("N0"));
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 264f, panel.width - 56f, 44f), GlitchRacerLocalization.BestDistance(language), GlitchRacerLocalization.Meters(Mathf.RoundToInt(game.BestDistance), language));
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 314f, panel.width - 56f, 44f), GlitchRacerLocalization.TotalDistance(language), GlitchRacerLocalization.Meters(Mathf.RoundToInt(game.TotalDistance), language));
 
-            if (DrawActionButton(new Rect(panel.x + 28f, buttonY, panel.width - 56f, 54f), "Start Run", true))
+            if (DrawActionButton(new Rect(panel.x + 28f, buttonY, panel.width - 56f, 54f), GlitchRacerLocalization.StartRun(language), true))
             {
                 game.StartGame();
             }
 
-            if (DrawActionButton(new Rect(panel.x + 28f, buttonY + 64f, panel.width - 56f, 42f), "Shop / Upgrades"))
+            if (DrawActionButton(new Rect(panel.x + 28f, buttonY + 64f, panel.width - 56f, 42f), GlitchRacerLocalization.ShopUpgrades(language)))
             {
                 game.OpenShop();
             }
 
-            if (DrawActionButton(new Rect(panel.x + 28f, buttonY + 114f, panel.width - 56f, 42f), "Settings"))
+            if (DrawActionButton(new Rect(panel.x + 28f, buttonY + 114f, panel.width - 56f, 42f), GlitchRacerLocalization.Settings(language)))
             {
                 game.OpenSettings();
             }
 
             Rect formula = new Rect(panel.x + 28f, panel.yMax - 70f, panel.width - 56f, 38f);
             DrawSoftCard(formula, new Color(1f, 1f, 1f, 0.04f));
-            GUI.Label(new Rect(formula.x + 14f, formula.y + 4f, 120f, 14f), "RUN PAYOUT", tinyStyle);
-            GUI.Label(new Rect(formula.x + 14f, formula.y + 16f, formula.width - 28f, 16f), "3.5 x shards + 0.03 x score + 0.12 x meters", tinyStyle);
+            GUI.Label(new Rect(formula.x + 14f, formula.y + 4f, 160f, 14f), GlitchRacerLocalization.RunPayout(language), tinyStyle);
+            GUI.Label(new Rect(formula.x + 14f, formula.y + 16f, formula.width - 28f, 16f), GlitchRacerLocalization.PayoutFormula(language), tinyStyle);
         }
 
         private void DrawShop()
         {
             Rect panel = new Rect(Screen.width * 0.5f - 280f, 88f, 560f, 408f);
-            DrawPanel(panel, "Shop");
+            string language = game.CurrentLanguage;
+            DrawPanel(panel, GlitchRacerLocalization.ShopTitle(language));
 
             DrawUpgradeCard(
                 new Rect(panel.x + 20f, panel.y + 76f, panel.width - 40f, 112f),
-                $"Fuel Efficiency Lv.{game.FuelUpgradeLevel}",
-                $"Reduces RAM drain by 8% per level.\nCurrent drain multiplier: x{game.FuelDrainMultiplier:0.00}",
-                $"Buy {game.FuelUpgradeCost}",
+                GlitchRacerLocalization.FuelUpgradeTitle(game.FuelUpgradeLevel, language),
+                GlitchRacerLocalization.FuelUpgradeBody(game.FuelDrainMultiplier, language),
+                GlitchRacerLocalization.Buy(game.FuelUpgradeCost, language),
                 out Rect fuelButtonRect);
             if (GUI.Button(fuelButtonRect, GUIContent.none, GUIStyle.none))
             {
@@ -524,16 +554,16 @@ namespace GlitchRacer
 
             DrawUpgradeCard(
                 new Rect(panel.x + 20f, panel.y + 204f, panel.width - 40f, 112f),
-                $"Score Booster Lv.{game.ScoreUpgradeLevel}",
-                $"Boosts all score gains by 12% per level.\nCurrent score multiplier: x{game.ScoreMultiplier:0.00}",
-                $"Buy {game.ScoreUpgradeCost}",
+                GlitchRacerLocalization.ScoreUpgradeTitle(game.ScoreUpgradeLevel, language),
+                GlitchRacerLocalization.ScoreUpgradeBody(game.ScoreMultiplier, language),
+                GlitchRacerLocalization.Buy(game.ScoreUpgradeCost, language),
                 out Rect scoreButtonRect);
             if (GUI.Button(scoreButtonRect, GUIContent.none, GUIStyle.none))
             {
                 game.TryBuyScoreUpgrade();
             }
 
-            if (DrawActionButton(new Rect(panel.x + 20f, panel.y + panel.height - 56f, panel.width - 40f, 40f), "Back"))
+            if (DrawActionButton(new Rect(panel.x + 20f, panel.y + panel.height - 56f, panel.width - 40f, 40f), GlitchRacerLocalization.Back(language)))
             {
                 game.CloseOverlayToMenu();
             }
@@ -541,22 +571,28 @@ namespace GlitchRacer
 
         private void DrawSettings()
         {
-            Rect panel = new Rect(Screen.width * 0.5f - 240f, 110f, 480f, 300f);
-            DrawPanel(panel, "Settings");
+            string language = game.CurrentLanguage;
+            Rect panel = new Rect(Screen.width * 0.5f - 240f, 110f, 480f, 360f);
+            DrawPanel(panel, GlitchRacerLocalization.Settings(language));
 
-            if (DrawActionButton(new Rect(panel.x + 24f, panel.y + 78f, panel.width - 48f, 48f), $"Music: {(game.MusicEnabled ? "On" : "Off")}"))
+            if (DrawActionButton(new Rect(panel.x + 24f, panel.y + 78f, panel.width - 48f, 48f), GlitchRacerLocalization.MusicButton(game.MusicEnabled, language)))
             {
                 game.ToggleMusic();
             }
 
-            if (DrawActionButton(new Rect(panel.x + 24f, panel.y + 140f, panel.width - 48f, 48f), $"SFX: {(game.SfxEnabled ? "On" : "Off")}"))
+            if (DrawActionButton(new Rect(panel.x + 24f, panel.y + 140f, panel.width - 48f, 48f), GlitchRacerLocalization.SfxButton(game.SfxEnabled, language)))
             {
                 game.ToggleSfx();
             }
 
-            GUI.Label(new Rect(panel.x + 24f, panel.y + 204f, panel.width - 48f, 42f), "Progress is saved automatically on every run end and purchase.", subStyle);
+            if (DrawActionButton(new Rect(panel.x + 24f, panel.y + 202f, panel.width - 48f, 48f), GlitchRacerLocalization.LanguageButton(game.CurrentLanguage, language)))
+            {
+                game.ToggleLanguage();
+            }
 
-            if (DrawActionButton(new Rect(panel.x + 24f, panel.y + panel.height - 58f, panel.width - 48f, 40f), "Back"))
+            GUI.Label(new Rect(panel.x + 24f, panel.y + 264f, panel.width - 48f, 42f), GlitchRacerLocalization.ProgressSaved(language), subStyle);
+
+            if (DrawActionButton(new Rect(panel.x + 24f, panel.y + panel.height - 58f, panel.width - 48f, 40f), GlitchRacerLocalization.Back(language)))
             {
                 game.CloseOverlayToMenu();
             }
@@ -564,20 +600,21 @@ namespace GlitchRacer
 
         private void DrawGameOver()
         {
+            string language = game.CurrentLanguage;
             Rect panel = new Rect(Screen.width * 0.5f - 260f, Screen.height * 0.5f - 190f, 520f, 380f);
-            DrawPanel(panel, "System Failure");
+            DrawPanel(panel, GlitchRacerLocalization.SystemFailure(language));
 
-            GUI.Label(new Rect(panel.x + 24f, panel.y + 76f, panel.width - 48f, 30f), $"Score: {Mathf.RoundToInt(game.Score):N0}", labelStyle);
-            GUI.Label(new Rect(panel.x + 24f, panel.y + 108f, panel.width - 48f, 30f), $"Distance: {Mathf.RoundToInt(game.CurrentDistance):N0} m", labelStyle);
-            GUI.Label(new Rect(panel.x + 24f, panel.y + 140f, panel.width - 48f, 30f), $"Data shards: {game.CollectedDataShards:N0}", labelStyle);
-            GUI.Label(new Rect(panel.x + 24f, panel.y + 172f, panel.width - 48f, 30f), $"Coins earned: +{game.LastRunCoinsReward:N0}", labelStyle);
-            GUI.Label(new Rect(panel.x + 24f, panel.y + 214f, panel.width - 48f, 54f), "Leaderboard metric: run distance in meters. Use this when sending results to Yandex leaderboards.", subStyle);
+            GUI.Label(new Rect(panel.x + 24f, panel.y + 76f, panel.width - 48f, 30f), GlitchRacerLocalization.ScoreLine(Mathf.RoundToInt(game.Score), language), labelStyle);
+            GUI.Label(new Rect(panel.x + 24f, panel.y + 108f, panel.width - 48f, 30f), GlitchRacerLocalization.DistanceLine(Mathf.RoundToInt(game.CurrentDistance), language), labelStyle);
+            GUI.Label(new Rect(panel.x + 24f, panel.y + 140f, panel.width - 48f, 30f), GlitchRacerLocalization.DataShardsLine(game.CollectedDataShards, language), labelStyle);
+            GUI.Label(new Rect(panel.x + 24f, panel.y + 172f, panel.width - 48f, 30f), GlitchRacerLocalization.CoinsEarnedLine(game.LastRunCoinsReward, language), labelStyle);
+            GUI.Label(new Rect(panel.x + 24f, panel.y + 214f, panel.width - 48f, 54f), GlitchRacerLocalization.LeaderboardMetric(language), subStyle);
 
             float buttonY = panel.y + panel.height - 108f;
 
             if (!game.HasUsedRevive)
             {
-                if (DrawActionButton(new Rect(panel.x + 24f, buttonY, panel.width - 48f, 42f), "Revive (Watch Ad)", true))
+                if (DrawActionButton(new Rect(panel.x + 24f, buttonY, panel.width - 48f, 42f), GlitchRacerLocalization.ReviveWatchAd(language), true))
                 {
 #if RewardedAdv_yg
                     YG2.RewardedAdvShow("Revive");
@@ -585,12 +622,12 @@ namespace GlitchRacer
                 }
             }
 
-            if (DrawActionButton(new Rect(panel.x + 24f, buttonY + 50f, (panel.width - 60f) * 0.5f, 42f), "Run Again"))
+            if (DrawActionButton(new Rect(panel.x + 24f, buttonY + 50f, (panel.width - 60f) * 0.5f, 42f), GlitchRacerLocalization.RunAgain(language)))
             {
                 game.StartGame();
             }
 
-            if (DrawActionButton(new Rect(panel.center.x + 6f, buttonY + 50f, (panel.width - 60f) * 0.5f, 42f), "Main Menu"))
+            if (DrawActionButton(new Rect(panel.center.x + 6f, buttonY + 50f, (panel.width - 60f) * 0.5f, 42f), GlitchRacerLocalization.MainMenu(language)))
             {
                 game.EnterMainMenu();
             }
