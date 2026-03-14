@@ -91,6 +91,8 @@ namespace GlitchRacer
         private float chapterRushTimer;
         private float nextChapterDistance;
 
+        // FIX: Configure теперь НЕ вызывает EnterMainMenu().
+        // Bootstrap сам вызовет EnterMainMenu() после Configure(), когда все ссылки уже заданы.
         public void Configure(RunnerPlayer playerController, TrackSegmentSpawner trackSpawner, GlitchCameraRig rig, GlitchRacerHud gameHud)
         {
             player = playerController;
@@ -106,7 +108,9 @@ namespace GlitchRacer
 #if PlayerStats_yg
             YG2.onGetSDKData += HandleCloudSaveLoaded;
 #endif
-            EnterMainMenu();
+            // FIX: EnterMainMenu() убран отсюда. Раньше вызывался здесь когда player/spawner/rig/hud
+            // ещё не были назначены через Configure() — все вызовы внутри (player?.ResetRunner() и т.д.)
+            // уходили в никуда. Bootstrap вызывает EnterMainMenu() явно после Configure().
         }
 
         private void OnDestroy()

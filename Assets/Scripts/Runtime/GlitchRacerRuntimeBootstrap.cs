@@ -106,6 +106,14 @@ namespace GlitchRacer
 
             RunnerPlayer player = FindOrCreatePlayer();
 
+            // FIX: порядок инициализации:
+            // 1. Configure() — назначаем все ссылки во все компоненты
+            // 2. EnterMainMenu() — теперь все ссылки (player, spawner, rig) уже живые
+            // 3. SnapToTarget() — камера встаёт на место уже в правильном состоянии
+            //
+            // Раньше GlitchRacerGame.Awake() вызывал EnterMainMenu() ещё до Configure(),
+            // player/spawner/rig были null — вся инициализация уходила впустую,
+            // а потом Bootstrap вызывал её повторно уже корректно.
             spawner.Configure(game);
             rig.Configure(game, player.transform);
             hud.Configure(game);

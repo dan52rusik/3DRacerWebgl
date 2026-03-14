@@ -10,8 +10,12 @@ namespace GlitchRacer
         [SerializeField] private float laneOffset = 4f;
 
         private readonly List<GameObject> activeSegments = new();
+        // FIX: вместо solidMaterialTemplate + new Material() на каждый объект -
+        // пул материалов, ключ = Color. Один материал на уникальный цвет на весь сеанс.
+        // new Material() в цикле - главная причина GC-спайков и прерывистости дороги.
+        private readonly Dictionary<Color, Material> solidMaterialPool = new();
         private Material glowMaterial;
-        private Material solidMaterialTemplate;
+        private Shader cachedSolidShader;
         private Texture2D generatedGlowTexture;
         private GlitchRacerGame game;
         private float nextSpawnZ;
@@ -26,12 +30,15 @@ namespace GlitchRacer
 
         private void Start()
         {
+            // FIX: убран безусловный ResetTrack() из Start().
+            // Bootstrap вызывает Configure(game) -> EnterMainMenu() -> spawner.ResetTrack().
+            // Если Start() тоже вызывал ResetTrack() - первый кадр перестраивал сегменты дважды.
+            // Оставляем запасной вариант только если Bootstrap не сработал (тестовая сцена).
             if (game == null)
             {
                 game = FindFirstObjectByType<GlitchRacerGame>();
+                ResetTrack();
             }
-
-            ResetTrack();
         }
 
         private void Update()
@@ -1254,6 +1261,9 @@ namespace GlitchRacer
             return generatedGlowTexture;
         }
 
+        // FIX: ApplyColor теперь использует пул - один Material на уникальный цвет.
+        // Раньше каждый вызов делал new Material(), что при построении сегмента
+        // (100+ объектов) давало 100+ аллокаций за раз -> GC pause -> jitter.
         private void ApplyColor(GameObject target, Color color)
         {
             Renderer renderer = target.GetComponent<Renderer>();
@@ -1262,34 +1272,43 @@ namespace GlitchRacer
                 return;
             }
 
-            if (solidMaterialTemplate == null)
+            renderer.sharedMaterial = GetOrCreateSolidMaterial(color);
+        }
+
+        private Material GetOrCreateSolidMaterial(Color color)
+        {
+            if (solidMaterialPool.TryGetValue(color, out Material existing))
             {
-                Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-                if (shader == null)
+                return existing;
+            }
+
+            if (cachedSolidShader == null)
+            {
+                cachedSolidShader = Shader.Find("Universal Render Pipeline/Unlit");
+                if (cachedSolidShader == null)
                 {
-                    shader = Shader.Find("Unlit/Color");
+                    cachedSolidShader = Shader.Find("Unlit/Color");
                 }
 
-                if (shader == null)
+                if (cachedSolidShader == null)
                 {
-                    shader = Shader.Find("Sprites/Default");
+                    cachedSolidShader = Shader.Find("Sprites/Default");
                 }
-
-                solidMaterialTemplate = new Material(shader);
             }
 
-            Material instanceMaterial = new Material(solidMaterialTemplate);
-            if (instanceMaterial.HasProperty("_BaseColor"))
+            Material mat = new(cachedSolidShader);
+            if (mat.HasProperty("_BaseColor"))
             {
-                instanceMaterial.SetColor("_BaseColor", color);
+                mat.SetColor("_BaseColor", color);
             }
 
-            if (instanceMaterial.HasProperty("_Color"))
+            if (mat.HasProperty("_Color"))
             {
-                instanceMaterial.SetColor("_Color", color);
+                mat.SetColor("_Color", color);
             }
 
-            renderer.sharedMaterial = instanceMaterial;
+            solidMaterialPool[color] = mat;
+            return mat;
         }
 
         private static void RemoveCollider(GameObject target)

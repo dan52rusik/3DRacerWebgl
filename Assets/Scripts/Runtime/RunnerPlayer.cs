@@ -153,6 +153,12 @@ namespace GlitchRacer
         private LineRenderer rightTrailLine;
         private readonly List<Vector3> leftTrailPoints = new();
         private readonly List<Vector3> rightTrailPoints = new();
+        // FIX: кешируем Gradient объекты. Раньше UpdateTrailLine создавал
+        // new Gradient() + SetKeys() каждый кадр на каждый трейл = 2 аллокации/кадр = ~120/сек.
+        private readonly Gradient leftTrailGradient = new();
+        private readonly Gradient rightTrailGradient = new();
+        private Color cachedLeftColor;
+        private Color cachedRightColor;
 
         private const float TrailSampleDistance = 0.08f;
         private const float MaxTrailLength = 5.5f;
@@ -166,14 +172,24 @@ namespace GlitchRacer
         {
             fxMaterial = CreateFxMaterial();
 
-            leftSparks = CreateSparkEmitter("LeftSparks", new Vector3(-0.5f, -0.34f, -0.95f), new Color(0.08f, 0.95f, 1f));
-            rightSparks = CreateSparkEmitter("RightSparks", new Vector3(0.5f, -0.34f, -0.95f), new Color(1f, 0.28f, 0.72f));
+            Color leftColor = new Color(0.08f, 0.95f, 1f);
+            Color rightColor = new Color(1f, 0.28f, 0.72f);
+
+            leftSparks = CreateSparkEmitter("LeftSparks", new Vector3(-0.5f, -0.34f, -0.95f), leftColor);
+            rightSparks = CreateSparkEmitter("RightSparks", new Vector3(0.5f, -0.34f, -0.95f), rightColor);
 
             leftRearAnchor = CreateAnchor("LeftRearAnchor", new Vector3(-0.32f, -0.5f, -0.18f));
             rightRearAnchor = CreateAnchor("RightRearAnchor", new Vector3(0.32f, -0.5f, -0.18f));
 
-            leftTrailLine = CreateTrailLine("LeftTrailLine", new Color(0.08f, 0.95f, 1f));
-            rightTrailLine = CreateTrailLine("RightTrailLine", new Color(1f, 0.28f, 0.72f));
+            leftTrailLine = CreateTrailLine("LeftTrailLine", leftColor);
+            rightTrailLine = CreateTrailLine("RightTrailLine", rightColor);
+
+            // FIX: запекаем градиенты один раз при старте. Цвет трейлов не меняется,
+            // значит пересоздавать Gradient каждый кадр не нужно.
+            BakeTrailGradient(leftTrailGradient, leftColor);
+            BakeTrailGradient(rightTrailGradient, rightColor);
+            cachedLeftColor = leftColor;
+            cachedRightColor = rightColor;
 
             lastPosition = transform.position;
             ResetTrailPoints();
@@ -199,8 +215,8 @@ namespace GlitchRacer
             bool active = game.State == GlitchRacerGame.SessionState.Playing;
             UpdateSparkEmitter(leftSparks, active, chaos, lateralFactor, glitchFactor);
             UpdateSparkEmitter(rightSparks, active, chaos, lateralFactor, glitchFactor);
-            UpdateTrailLine(leftTrailLine, leftTrailPoints, leftRearAnchor, active, chaos, lateralFactor, glitchFactor, new Color(0.08f, 0.95f, 1f));
-            UpdateTrailLine(rightTrailLine, rightTrailPoints, rightRearAnchor, active, chaos, lateralFactor, glitchFactor, new Color(1f, 0.28f, 0.72f));
+            UpdateTrailLine(leftTrailLine, leftTrailPoints, leftRearAnchor, active, chaos, lateralFactor, glitchFactor, leftTrailGradient);
+            UpdateTrailLine(rightTrailLine, rightTrailPoints, rightRearAnchor, active, chaos, lateralFactor, glitchFactor, rightTrailGradient);
 
             burstCooldown -= Time.deltaTime;
             if (active && burstCooldown <= 0f && (lateralFactor > 0.45f || glitchFactor > 0.5f))
@@ -227,7 +243,7 @@ namespace GlitchRacer
             shape.rotation = new Vector3(0f, 0f, Mathf.Lerp(12f, 36f, lateralFactor + glitchFactor * 0.3f));
         }
 
-        private void UpdateTrailLine(LineRenderer line, List<Vector3> points, Transform frontAnchor, bool active, float chaos, float lateralFactor, float glitchFactor, Color baseColor)
+        private void UpdateTrailLine(LineRenderer line, List<Vector3> points, Transform frontAnchor, bool active, float chaos, float lateralFactor, float glitchFactor, Gradient cachedGradient)
         {
             if (line == null || frontAnchor == null)
             {
@@ -275,8 +291,12 @@ namespace GlitchRacer
             line.widthMultiplier = Mathf.Lerp(0.16f, 0.24f, Mathf.Clamp01(chaos + lateralFactor * 0.5f));
             line.positionCount = points.Count;
             line.SetPositions(points.ToArray());
+            // FIX: передаём уже готовый Gradient, не создаём новый каждый кадр.
+            line.colorGradient = cachedGradient;
+        }
 
-            Gradient gradient = new();
+        private static void BakeTrailGradient(Gradient gradient, Color baseColor)
+        {
             Color head = Color.Lerp(baseColor, Color.white, 0.2f);
             gradient.SetKeys(
                 new[]
@@ -291,7 +311,6 @@ namespace GlitchRacer
                     new GradientAlphaKey(0.6f, 0.35f),
                     new GradientAlphaKey(0f, 1f)
                 });
-            line.colorGradient = gradient;
         }
 
         private Transform CreateAnchor(string anchorName, Vector3 localPosition)
