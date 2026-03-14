@@ -16,6 +16,8 @@ namespace GlitchRacer
         private readonly Dictionary<Color, Material> solidMaterialPool = new();
         private Material cachedGlowMaterial;
         private Texture2D generatedGlowTexture;
+        private Texture2D companyLogoTexture;
+        private Material companyLogoMaterial;
         private GlitchRacerGame game;
         private float nextSpawnZ;
         private int segmentIndex;
@@ -829,10 +831,20 @@ namespace GlitchRacer
             GameObject signCore = GameObject.CreatePrimitive(PrimitiveType.Cube);
             signCore.name = "ArchBillboardCore";
             signCore.transform.SetParent(signBody.transform, false);
-            signCore.transform.localPosition = new Vector3(0f, 0f, -0.02f);
+            signCore.transform.localPosition = new Vector3(0f, 0f, 0f);
             signCore.transform.localScale = new Vector3(0.88f, 0.74f, 0.72f);
-            ApplyColor(signCore, new Color(0.78f, 0.92f, 1f));
+            ApplyColor(signCore, new Color(0.04f, 0.05f, 0.08f));
             RemoveCollider(signCore);
+            
+            GameObject logoCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            logoCube.name = "ArchLogo3D";
+            logoCube.transform.SetParent(archRoot.transform, false);
+            logoCube.transform.localPosition = new Vector3(0f, 5.64f, -0.25f);
+            logoCube.transform.localRotation = Quaternion.Euler(0f, 0f, 180f);
+            logoCube.transform.localScale = new Vector3(3.6f, 0.7f, 0.4f);
+            ApplyCompanyLogo(logoCube);
+            RemoveCollider(logoCube);
+
             CreateGlowBox(archRoot.transform, "ArchBillboardGlow", new Vector3(0f, 5.64f, 0f), new Vector3(4.4f, 1.1f, 0.22f), new Color(0.24f, 0.88f, 1f, 0.16f));
 
             GameObject leftBracket = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -1363,6 +1375,62 @@ namespace GlitchRacer
             return mat;
         }
 
+        private void ApplyCompanyLogo(GameObject target)
+        {
+            Renderer renderer = target.GetComponent<Renderer>();
+            if (renderer == null)
+            {
+                return;
+            }
+
+            Material mat = GetCompanyLogoMaterial();
+            if (mat != null)
+            {
+                renderer.sharedMaterial = mat;
+            }
+        }
+
+        private Material GetCompanyLogoMaterial()
+        {
+            if (companyLogoMaterial != null)
+            {
+                return companyLogoMaterial;
+            }
+
+            if (companyLogoTexture == null)
+            {
+                companyLogoTexture = Resources.Load<Texture2D>("logo overheat");
+            }
+
+            Shader shader = FindRuntimeShader(
+                "Universal Render Pipeline/Unlit",
+                "Unlit/Color",
+                "Sprites/Default");
+
+            if (shader == null)
+            {
+                return null;
+            }
+
+            companyLogoMaterial = new Material(shader);
+            if (companyLogoTexture != null)
+            {
+                if (companyLogoMaterial.HasProperty("_BaseMap"))
+                {
+                    companyLogoMaterial.SetTexture("_BaseMap", companyLogoTexture);
+                    companyLogoMaterial.SetColor("_BaseColor", Color.white);
+                }
+                
+                if (companyLogoMaterial.HasProperty("_MainTex"))
+                {
+                    companyLogoMaterial.SetTexture("_MainTex", companyLogoTexture);
+                    companyLogoMaterial.SetColor("_Color", Color.white);
+                }
+            }
+
+            return companyLogoMaterial;
+        }
+
         private void OnDestroy()
         {
             if (generatedGlowTexture != null)
@@ -1376,6 +1444,14 @@ namespace GlitchRacer
                 Destroy(cachedGlowMaterial);
                 cachedGlowMaterial = null;
             }
+
+            if (companyLogoMaterial != null)
+            {
+                Destroy(companyLogoMaterial);
+                companyLogoMaterial = null;
+            }
+
+            // companyLogoTexture is a project asset loaded from Resources, so we don't Destroy() it manually.
 
             foreach (Material material in solidMaterialPool.Values)
             {
