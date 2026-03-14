@@ -19,6 +19,27 @@ namespace GlitchRacer
             target = followTarget;
         }
 
+        public void SnapToTarget()
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            Vector3 offset = followOffset;
+            if (game != null && game.IsMenuVisible)
+            {
+                offset += new Vector3(1.1f, 0.2f, -0.9f);
+            }
+            else if (game != null && game.IsChapterRush)
+            {
+                offset += new Vector3(0f, 0.7f, -2.8f);
+            }
+
+            transform.position = target.position + offset;
+            transform.LookAt(target.position + Vector3.up * 0.55f);
+        }
+
         private void Awake()
         {
             cachedCamera = GetComponent<Camera>();
@@ -38,7 +59,7 @@ namespace GlitchRacer
             Vector3 offset = followOffset;
             if (game != null && game.IsMenuVisible)
             {
-                offset += new Vector3(2.8f, 0.4f, -2.2f);
+                offset += new Vector3(1.1f, 0.2f, -0.9f);
             }
             else if (game != null && game.IsChapterRush)
             {

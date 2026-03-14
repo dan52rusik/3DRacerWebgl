@@ -149,9 +149,14 @@ namespace GlitchRacer
             CreateBridgeDeck(parent, currentSegmentIndex);
             CreateBridgeSupports(parent, currentSegmentIndex);
             CreateServerAbyss(parent, currentSegmentIndex);
-            CreateAbyssRifts(parent, currentSegmentIndex);
-            CreateAbyssCore(parent, currentSegmentIndex);
-            CreateScanArches(parent, currentSegmentIndex);
+
+            bool isIntroSegment = currentSegmentIndex == 0;
+            if (!isIntroSegment)
+            {
+                CreateAbyssRifts(parent, currentSegmentIndex);
+                CreateAbyssCore(parent, currentSegmentIndex);
+                CreateScanArches(parent, currentSegmentIndex);
+            }
         }
 
         private void CreateVoidFog(Transform parent, int currentSegmentIndex)

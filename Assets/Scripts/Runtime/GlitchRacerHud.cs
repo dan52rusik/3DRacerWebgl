@@ -77,14 +77,6 @@ namespace GlitchRacer
                 DrawCriticalRamOverlay();
             }
 
-            if (game.ActiveGlitch != GlitchRacerGame.GlitchType.None)
-            {
-                Rect glitchRect = new Rect(24f, 150f, Mathf.Min(320f, Screen.width - 48f), 28f);
-                DrawSoftCard(glitchRect, new Color(0.18f, 0.05f, 0.24f, 0.74f));
-                GUI.Label(new Rect(glitchRect.x + 10f, glitchRect.y + 5f, glitchRect.width - 20f, 18f),
-                    $"GLITCH {game.GlitchTimeRemaining:0.0}s | {game.ActiveGlitchLabel}", tinyStyle);
-            }
-
             if (game.State == GlitchRacerGame.SessionState.Playing)
             {
                 DrawControlHint();
@@ -115,6 +107,8 @@ namespace GlitchRacer
 
         private void BuildCanvasHud()
         {
+            CleanupExistingCanvasHud();
+
             if (canvasRoot != null)
             {
                 return;
@@ -159,6 +153,35 @@ namespace GlitchRacer
             CreateHudCard("GlitchCard", new Vector2(414f, -92f), new Vector2(380f, 40f), new Color(0.18f, 0.05f, 0.24f, 0.74f), out RectTransform glitchRect);
             glitchRect.gameObject.SetActive(false);
             CreateCanvasText(glitchRect, "GlitchValue", new Vector2(12f, -8f), new Vector2(352f, 20f), string.Empty, 16, TextAnchor.UpperLeft, out glitchText);
+        }
+
+        private void CleanupExistingCanvasHud()
+        {
+            canvasRoot = null;
+            scoreText = null;
+            distanceText = null;
+            ramText = null;
+            coinsText = null;
+            glitchText = null;
+            ramFill = null;
+
+            for (int i = transform.childCount - 1; i >= 0; i--)
+            {
+                Transform child = transform.GetChild(i);
+                if (child.name != "GlitchCanvasHud")
+                {
+                    continue;
+                }
+
+#if UNITY_EDITOR
+                if (!Application.isPlaying)
+                {
+                    DestroyImmediate(child.gameObject);
+                    continue;
+                }
+#endif
+                Destroy(child.gameObject);
+            }
         }
 
         private void CreateRamBar(RectTransform parent)
@@ -280,13 +303,16 @@ namespace GlitchRacer
 
             if (ramFill != null)
             {
-                float ramPercentage = Mathf.Clamp01(game.CurrentRam / 100f);
+                float maxRam = Mathf.Max(1f, game.MaxRam);
+                float ramPercentage = Mathf.Clamp01(game.CurrentRam / maxRam);
                 ramFill.rectTransform.anchorMax = new Vector2(ramPercentage, 1f);
             }
 
             if (ramText != null)
             {
-                ramText.text = $"{Mathf.CeilToInt(game.CurrentRam)}%";
+                float maxRam = Mathf.Max(1f, game.MaxRam);
+                float ramPercent = Mathf.Clamp(game.CurrentRam / maxRam * 100f, 0f, 100f);
+                ramText.text = $"{Mathf.CeilToInt(ramPercent)}%";
             }
 
             if (glitchText != null && glitchText.transform.parent != null)
@@ -347,17 +373,17 @@ namespace GlitchRacer
 
         private void DrawDrunkOverlay()
         {
-            float sway = Mathf.Sin(Time.time * 2.5f) * 24f;
-            GUI.color = new Color(0.2f, 0.9f, 0.95f, 0.08f);
-            GUI.DrawTexture(new Rect(-60f + sway, 0f, Screen.width * 0.4f, Screen.height), fillTexture);
-            GUI.color = new Color(1f, 0.2f, 0.7f, 0.08f);
-            GUI.DrawTexture(new Rect(Screen.width * 0.62f - sway, 0f, Screen.width * 0.42f, Screen.height), fillTexture);
+            float sway = Mathf.Sin(Time.time * 2.5f) * 18f;
+            GUI.color = new Color(0.2f, 0.9f, 0.95f, 0.035f);
+            GUI.DrawTexture(new Rect(-24f + sway, 0f, Screen.width * 0.18f, Screen.height), fillTexture);
+            GUI.color = new Color(1f, 0.2f, 0.7f, 0.035f);
+            GUI.DrawTexture(new Rect(Screen.width * 0.82f - sway, 0f, Screen.width * 0.2f, Screen.height), fillTexture);
 
             for (int i = 0; i < 4; i++)
             {
                 float waveY = Screen.height * (0.18f + i * 0.2f) + Mathf.Sin(Time.time * (2f + i)) * 18f;
-                GUI.color = new Color(1f, 1f, 1f, 0.05f);
-                GUI.DrawTexture(new Rect(0f, waveY, Screen.width, 10f), fillTexture);
+                GUI.color = new Color(1f, 1f, 1f, 0.035f);
+                GUI.DrawTexture(new Rect(0f, waveY, Screen.width, 6f), fillTexture);
             }
 
             GUI.color = Color.white;
@@ -402,19 +428,19 @@ namespace GlitchRacer
         private void DrawDrugsOverlay()
         {
             float pulse = (Mathf.Sin(Time.time * 3.2f) + 1f) * 0.5f;
-            float drift = Mathf.Sin(Time.time * 1.7f) * 42f;
+            float drift = Mathf.Sin(Time.time * 1.7f) * 28f;
 
-            GUI.color = new Color(1f, 0.1f, 0.7f, 0.11f + pulse * 0.06f);
-            GUI.DrawTexture(new Rect(-90f + drift, -10f, Screen.width * 0.52f, Screen.height + 20f), fillTexture);
+            GUI.color = new Color(1f, 0.1f, 0.7f, 0.06f + pulse * 0.03f);
+            GUI.DrawTexture(new Rect(-48f + drift, -10f, Screen.width * 0.28f, Screen.height + 20f), fillTexture);
 
-            GUI.color = new Color(0.12f, 1f, 0.86f, 0.1f + (1f - pulse) * 0.07f);
-            GUI.DrawTexture(new Rect(Screen.width * 0.52f - drift, -10f, Screen.width * 0.56f, Screen.height + 20f), fillTexture);
+            GUI.color = new Color(0.12f, 1f, 0.86f, 0.06f + (1f - pulse) * 0.03f);
+            GUI.DrawTexture(new Rect(Screen.width * 0.72f - drift, -10f, Screen.width * 0.32f, Screen.height + 20f), fillTexture);
 
             for (int i = 0; i < 6; i++)
             {
-                float bandHeight = 10f + Mathf.Sin(Time.time * (2.5f + i * 0.3f)) * 6f;
+                float bandHeight = 6f + Mathf.Sin(Time.time * (2.5f + i * 0.3f)) * 4f;
                 float y = Screen.height * (0.1f + i * 0.14f) + Mathf.Cos(Time.time * (1.8f + i)) * 22f;
-                GUI.color = new Color(i % 2 == 0 ? 1f : 0.2f, i % 2 == 0 ? 0.2f : 1f, 0.95f, 0.06f);
+                GUI.color = new Color(i % 2 == 0 ? 1f : 0.2f, i % 2 == 0 ? 0.2f : 1f, 0.95f, 0.03f);
                 GUI.DrawTexture(new Rect(-20f, y, Screen.width + 40f, bandHeight), fillTexture);
             }
 
@@ -423,11 +449,11 @@ namespace GlitchRacer
                 float size = 24f + Mathf.PingPong(Time.time * (20f + i), 36f);
                 float x = Mathf.Repeat((i * 97f) + Time.time * (18f + i * 4f), Screen.width + 120f) - 60f;
                 float y = Screen.height * (0.08f + (i % 6) * 0.14f) + Mathf.Sin(Time.time * (1.3f + i)) * 18f;
-                GUI.color = new Color(i % 3 == 0 ? 1f : 0.2f, i % 3 == 1 ? 1f : 0.25f, 1f, 0.05f);
+                GUI.color = new Color(i % 3 == 0 ? 1f : 0.2f, i % 3 == 1 ? 1f : 0.25f, 1f, 0.025f);
                 GUI.DrawTexture(new Rect(x, y, size, size * 0.26f), fillTexture);
             }
 
-            GUI.color = new Color(1f, 1f, 1f, 0.05f);
+            GUI.color = new Color(1f, 1f, 1f, 0.025f);
             GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), fillTexture);
             GUI.color = Color.white;
         }

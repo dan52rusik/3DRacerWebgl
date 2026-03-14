@@ -44,6 +44,7 @@ namespace GlitchRacer
         private GlitchRacerSaveData saveData;
 
         public float CurrentRam { get; private set; }
+        public float MaxRam => maxRam;
         public float CurrentSpeed { get; private set; }
         public float VisualScrollSpeed => IsChapterRush ? CurrentSpeed * GetChapterRushSpeedFactor() : CurrentSpeed;
         public float Score { get; private set; }
@@ -276,6 +277,8 @@ namespace GlitchRacer
 
         private void SimulateRun()
         {
+            CurrentRam = Mathf.Clamp(CurrentRam, 0f, maxRam);
+
             bool runActive = State == SessionState.Playing || IsMenuVisible;
             if (!runActive)
             {
