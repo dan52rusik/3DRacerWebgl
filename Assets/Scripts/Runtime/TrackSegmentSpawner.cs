@@ -1158,8 +1158,13 @@ namespace GlitchRacer
             RemoveCollider(glow);
 
             Renderer renderer = glow.GetComponent<Renderer>();
-            renderer.sharedMaterial = GetGlowMaterial();
-            renderer.material.color = color;
+            Material glowMaterial = GetGlowMaterial();
+            if (glowMaterial != null)
+            {
+                renderer.sharedMaterial = glowMaterial;
+                renderer.material.color = color;
+            }
+
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
             glow.layer = parent.gameObject.layer;
@@ -1179,8 +1184,17 @@ namespace GlitchRacer
             else
             {
                 // Fallback если забыли назначить в инспекторе
-                Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
-                if (shader == null) shader = Shader.Find("Unlit/Color");
+                Shader shader = FindRuntimeShader(
+                    "Universal Render Pipeline/Particles/Unlit",
+                    "Universal Render Pipeline/Unlit",
+                    "Unlit/Color",
+                    "Sprites/Default");
+                if (shader == null)
+                {
+                    Debug.LogError("TrackSegmentSpawner: glow shader not found. Add a fallback shader to Always Included Shaders.");
+                    return null;
+                }
+
                 cachedGlowMaterial = new Material(shader);
             }
 
@@ -1239,6 +1253,7 @@ namespace GlitchRacer
             generatedGlowTexture = new Texture2D(size, size, TextureFormat.RGBA32, false);
             generatedGlowTexture.wrapMode = TextureWrapMode.Clamp;
             generatedGlowTexture.filterMode = FilterMode.Bilinear;
+            generatedGlowTexture.hideFlags = HideFlags.HideAndDontSave;
 
             Vector2 center = new(size * 0.5f, size * 0.5f);
             float radius = size * 0.5f;
@@ -1269,7 +1284,11 @@ namespace GlitchRacer
                 return;
             }
 
-            renderer.sharedMaterial = GetOrCreateSolidMaterial(color);
+            Material material = GetOrCreateSolidMaterial(color);
+            if (material != null)
+            {
+                renderer.sharedMaterial = material;
+            }
         }
 
         private Material GetOrCreateSolidMaterial(Color color)
@@ -1286,8 +1305,16 @@ namespace GlitchRacer
             }
             else
             {
-                Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-                if (shader == null) shader = Shader.Find("Unlit/Color");
+                Shader shader = FindRuntimeShader(
+                    "Universal Render Pipeline/Unlit",
+                    "Unlit/Color",
+                    "Sprites/Default");
+                if (shader == null)
+                {
+                    Debug.LogError("TrackSegmentSpawner: solid shader not found. Add a fallback shader to Always Included Shaders.");
+                    return null;
+                }
+
                 mat = new Material(shader);
             }
             if (mat.HasProperty("_BaseColor"))
@@ -1302,6 +1329,45 @@ namespace GlitchRacer
 
             solidMaterialPool[color] = mat;
             return mat;
+        }
+
+        private void OnDestroy()
+        {
+            if (generatedGlowTexture != null)
+            {
+                Destroy(generatedGlowTexture);
+                generatedGlowTexture = null;
+            }
+
+            if (cachedGlowMaterial != null)
+            {
+                Destroy(cachedGlowMaterial);
+                cachedGlowMaterial = null;
+            }
+
+            foreach (Material material in solidMaterialPool.Values)
+            {
+                if (material != null)
+                {
+                    Destroy(material);
+                }
+            }
+
+            solidMaterialPool.Clear();
+        }
+
+        private static Shader FindRuntimeShader(params string[] shaderNames)
+        {
+            for (int i = 0; i < shaderNames.Length; i++)
+            {
+                Shader shader = Shader.Find(shaderNames[i]);
+                if (shader != null)
+                {
+                    return shader;
+                }
+            }
+
+            return null;
         }
 
         private static void RemoveCollider(GameObject target)

@@ -342,15 +342,14 @@ namespace GlitchRacer
                 return;
             }
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+            Shader shader = FindRuntimeShader(
+                "Universal Render Pipeline/Unlit",
+                "Unlit/Color",
+                "Sprites/Default");
             if (shader == null)
             {
-                shader = Shader.Find("Unlit/Color");
-            }
-
-            if (shader == null)
-            {
-                shader = Shader.Find("Sprites/Default");
+                Debug.LogError("GlitchRacerRuntimeBootstrap: runtime shader not found. Add a fallback shader to Always Included Shaders.");
+                return;
             }
 
             Material material = new(shader);
@@ -384,6 +383,20 @@ namespace GlitchRacer
 #endif
 
             Object.Destroy(collider);
+        }
+
+        private static Shader FindRuntimeShader(params string[] shaderNames)
+        {
+            for (int i = 0; i < shaderNames.Length; i++)
+            {
+                Shader shader = Shader.Find(shaderNames[i]);
+                if (shader != null)
+                {
+                    return shader;
+                }
+            }
+
+            return null;
         }
     }
 
@@ -476,7 +489,9 @@ namespace GlitchRacer
 
         private void ApplyScale()
         {
+#if !UNITY_WEBGL
             ScalableBufferManager.ResizeBuffers(currentScale, currentScale);
+#endif
         }
     }
 }

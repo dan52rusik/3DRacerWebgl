@@ -34,9 +34,19 @@ namespace GlitchRacer
 
         private void Awake()
         {
-            fillTexture = new Texture2D(1, 1);
+            fillTexture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
             fillTexture.SetPixel(0, 0, Color.white);
             fillTexture.Apply();
+            fillTexture.hideFlags = HideFlags.HideAndDontSave;
+        }
+
+        private void OnDestroy()
+        {
+            if (fillTexture != null)
+            {
+                Destroy(fillTexture);
+                fillTexture = null;
+            }
         }
 
         private void OnGUI()

@@ -375,7 +375,10 @@ namespace GlitchRacer
             colorOverLifetime.color = gradient;
 
             ParticleSystemRenderer renderer = system.GetComponent<ParticleSystemRenderer>();
-            renderer.material = fxMaterial;
+            if (fxMaterial != null)
+            {
+                renderer.material = fxMaterial;
+            }
             renderer.renderMode = ParticleSystemRenderMode.Billboard;
             renderer.sortMode = ParticleSystemSortMode.Distance;
 
@@ -391,7 +394,11 @@ namespace GlitchRacer
             }
 
             LineRenderer line = lineObject.AddComponent<LineRenderer>();
-            line.material = new Material(fxMaterial);
+            if (fxMaterial != null)
+            {
+                line.material = new Material(fxMaterial);
+            }
+
             line.useWorldSpace = true;
             line.alignment = LineAlignment.View;
             line.textureMode = LineTextureMode.Stretch;
@@ -416,27 +423,51 @@ namespace GlitchRacer
             rightTrailPoints.Add(rightPoint + Vector3.back * 0.06f);
         }
 
+        private void OnDestroy()
+        {
+            if (fxMaterial != null)
+            {
+                Destroy(fxMaterial);
+                fxMaterial = null;
+            }
+
+            if (leftTrailLine != null && leftTrailLine.sharedMaterial != null)
+            {
+                Destroy(leftTrailLine.sharedMaterial);
+            }
+
+            if (rightTrailLine != null && rightTrailLine.sharedMaterial != null)
+            {
+                Destroy(rightTrailLine.sharedMaterial);
+            }
+        }
+
+        private static Shader FindRuntimeShader(params string[] shaderNames)
+        {
+            for (int i = 0; i < shaderNames.Length; i++)
+            {
+                Shader shader = Shader.Find(shaderNames[i]);
+                if (shader != null)
+                {
+                    return shader;
+                }
+            }
+
+            return null;
+        }
+
         private static Material CreateFxMaterial()
         {
-            Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+            Shader shader = FindRuntimeShader(
+                "Universal Render Pipeline/Particles/Unlit",
+                "Particles/Additive",
+                "Legacy Shaders/Particles/Additive",
+                "Unlit/Color",
+                "Sprites/Default");
             if (shader == null)
             {
-                shader = Shader.Find("Particles/Additive");
-            }
-
-            if (shader == null)
-            {
-                shader = Shader.Find("Legacy Shaders/Particles/Additive");
-            }
-
-            if (shader == null)
-            {
-                shader = Shader.Find("Unlit/Color");
-            }
-
-            if (shader == null)
-            {
-                shader = Shader.Find("Sprites/Default");
+                Debug.LogError("RunnerPlayer: FX shader not found. Add a fallback shader to Always Included Shaders.");
+                return null;
             }
 
             Material material = new(shader);
