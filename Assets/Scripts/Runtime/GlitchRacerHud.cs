@@ -503,12 +503,12 @@ namespace GlitchRacer
             string language = game.CurrentLanguage;
             GUI.Label(new Rect(panel.x + 28f, panel.y + 22f, panel.width - 56f, 20f), GlitchRacerLocalization.BrandTagline(language), tinyStyle);
             GUI.Label(new Rect(panel.x + 28f, panel.y + 38f, panel.width - 56f, 46f), GlitchRacerLocalization.GameTitle(language), heroStyle);
-            GUI.Label(new Rect(panel.x + 28f, panel.y + 90f, panel.width - 56f, 54f), GlitchRacerLocalization.MainMenuDescription(language), subStyle);
+            GUI.Label(new Rect(panel.x + 28f, panel.y + 86f, panel.width - 56f, 74f), GlitchRacerLocalization.MainMenuDescription(language), subStyle);
 
-            DrawStatChip(new Rect(panel.x + 28f, panel.y + 164f, panel.width - 56f, 44f), GlitchRacerLocalization.WalletLabel(language), GlitchRacerLocalization.WalletValue(game.Coins, language));
-            DrawStatChip(new Rect(panel.x + 28f, panel.y + 214f, panel.width - 56f, 44f), GlitchRacerLocalization.BestScore(language), Mathf.RoundToInt(game.BestScore).ToString("N0"));
-            DrawStatChip(new Rect(panel.x + 28f, panel.y + 264f, panel.width - 56f, 44f), GlitchRacerLocalization.BestDistance(language), GlitchRacerLocalization.Meters(Mathf.RoundToInt(game.BestDistance), language));
-            DrawStatChip(new Rect(panel.x + 28f, panel.y + 314f, panel.width - 56f, 44f), GlitchRacerLocalization.TotalDistance(language), GlitchRacerLocalization.Meters(Mathf.RoundToInt(game.TotalDistance), language));
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 174f, panel.width - 56f, 44f), GlitchRacerLocalization.WalletLabel(language), GlitchRacerLocalization.WalletValue(game.Coins, language));
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 224f, panel.width - 56f, 44f), GlitchRacerLocalization.BestScore(language), Mathf.RoundToInt(game.BestScore).ToString("N0"));
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 274f, panel.width - 56f, 44f), GlitchRacerLocalization.BestDistance(language), GlitchRacerLocalization.Meters(Mathf.RoundToInt(game.BestDistance), language));
+            DrawStatChip(new Rect(panel.x + 28f, panel.y + 324f, panel.width - 56f, 44f), GlitchRacerLocalization.TotalDistance(language), GlitchRacerLocalization.Meters(Mathf.RoundToInt(game.TotalDistance), language));
 
             if (DrawActionButton(new Rect(panel.x + 28f, buttonY, panel.width - 56f, 54f), GlitchRacerLocalization.StartRun(language), true))
             {
@@ -691,9 +691,9 @@ namespace GlitchRacer
             GUI.DrawTexture(new Rect(rect.x, rect.yMax - 1f, rect.width, 1f), fillTexture);
             GUI.color = Color.white;
 
-            GUI.Label(new Rect(rect.x + 16f, rect.y + 14f, rect.width - 210f, 18f), title, upgradeTitleStyle);
-            GUI.Label(new Rect(rect.x + 16f, rect.y + 40f, rect.width - 210f, 42f), description, upgradeBodyStyle);
-            buttonRect = new Rect(rect.x + rect.width - 152f, rect.y + 28f, 132f, 42f);
+            GUI.Label(new Rect(rect.x + 16f, rect.y + 14f, rect.width - 230f, 18f), title, upgradeTitleStyle);
+            GUI.Label(new Rect(rect.x + 16f, rect.y + 40f, rect.width - 230f, 54f), description, upgradeBodyStyle);
+            buttonRect = new Rect(rect.x + rect.width - 172f, rect.y + 28f, 152f, 42f);
             bool hovered = buttonRect.Contains(Event.current.mousePosition);
             GUI.color = hovered ? new Color(1f, 0.8f, 0.2f, 0.92f) : new Color(0.9f, 0.68f, 0.12f, 0.82f);
             GUI.DrawTexture(buttonRect, fillTexture);
@@ -708,8 +708,7 @@ namespace GlitchRacer
             GUI.DrawTexture(new Rect(coinRect.x + 3f, coinRect.y + 3f, 12f, 12f), fillTexture);
             GUI.color = Color.white;
 
-            string compactPrice = priceText.Replace("Buy ", string.Empty);
-            GUI.Label(new Rect(buttonRect.x + 38f, buttonRect.y + 7f, buttonRect.width - 44f, 26f), compactPrice, upgradeTitleStyle);
+            GUI.Label(new Rect(buttonRect.x + 38f, buttonRect.y + 7f, buttonRect.width - 44f, 26f), priceText, upgradeTitleStyle);
         }
 
         private void EnsureStyles()
