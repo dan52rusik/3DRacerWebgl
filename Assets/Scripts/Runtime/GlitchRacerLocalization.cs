@@ -103,8 +103,8 @@ namespace GlitchRacer
         public static string RunPayout(string language) => NormalizeLanguage(language) == "ru" ? "НАГРАДА ЗА ЗАЕЗД" : "RUN PAYOUT";
         public static string PayoutFormula(string language) => NormalizeLanguage(language) == "ru" ? "3.5 x осколки + 0.03 x счет + 0.12 x метры" : "3.5 x shards + 0.03 x score + 0.12 x meters";
         public static string ShopTitle(string language) => NormalizeLanguage(language) == "ru" ? "Магазин" : "Shop";
-        public static string FuelUpgradeTitle(int level, string language) => NormalizeLanguage(language) == "ru" ? $"Экономия RAM ур.{level}" : $"Fuel Efficiency Lv.{level}";
-        public static string FuelUpgradeBody(float multiplier, string language) => NormalizeLanguage(language) == "ru" ? $"Снижает расход RAM на 8% за уровень.\nТекущий множитель расхода: x{multiplier:0.00}" : $"Reduces RAM drain by 8% per level.\nCurrent drain multiplier: x{multiplier:0.00}";
+        public static string FuelUpgradeTitle(int level, string language) => NormalizeLanguage(language) == "ru" ? $"Экономия памяти ур.{level}" : $"Fuel Efficiency Lv.{level}";
+        public static string FuelUpgradeBody(float multiplier, string language) => NormalizeLanguage(language) == "ru" ? $"Снижает расход памяти на 8% за уровень.\nТекущий множитель расхода: x{multiplier:0.00}" : $"Reduces RAM drain by 8% per level.\nCurrent drain multiplier: x{multiplier:0.00}";
         public static string ScoreUpgradeTitle(int level, string language) => NormalizeLanguage(language) == "ru" ? $"Усилитель счета ур.{level}" : $"Score Booster Lv.{level}";
         public static string ScoreUpgradeBody(float multiplier, string language) => NormalizeLanguage(language) == "ru" ? $"Увеличивает весь получаемый счет на 12% за уровень.\nТекущий множитель счета: x{multiplier:0.00}" : $"Boosts all score gains by 12% per level.\nCurrent score multiplier: x{multiplier:0.00}";
         public static string Buy(int cost, string language) => NormalizeLanguage(language) == "ru" ? $"Купить {cost}" : $"Buy {cost}";
@@ -124,6 +124,6 @@ namespace GlitchRacer
         public static string MainMenu(string language) => NormalizeLanguage(language) == "ru" ? "Главное меню" : "Main Menu";
         public static string ScoreLabel(string language) => NormalizeLanguage(language) == "ru" ? "СЧЕТ" : "SCORE";
         public static string DistanceLabel(string language) => NormalizeLanguage(language) == "ru" ? "ДИСТАНЦИЯ" : "DISTANCE";
-        public static string RamStability(string language) => NormalizeLanguage(language) == "ru" ? "СТАБИЛЬНОСТЬ RAM" : "RAM STABILITY";
+        public static string RamStability(string language) => NormalizeLanguage(language) == "ru" ? "СТАБИЛЬНОСТЬ ПАМЯТИ" : "RAM STABILITY";
     }
 }

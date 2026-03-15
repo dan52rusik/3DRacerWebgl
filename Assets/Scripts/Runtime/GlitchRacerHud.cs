@@ -20,6 +20,7 @@ namespace GlitchRacer
         private Text brandTitleText;
         private Image ramFill;
         private Texture2D fillTexture;
+        private RectTransform hudSafeAreaRoot;
         private GUIStyle labelStyle;
         private GUIStyle titleStyle;
         private GUIStyle centerStyle;
@@ -36,6 +37,8 @@ namespace GlitchRacer
         private float uiScale = 1f;
         private float vWidth => Screen.width / uiScale;
         private float vHeight => Screen.height / uiScale;
+        private Rect lastSafeArea = new Rect(-1f, -1f, -1f, -1f);
+        private Vector2Int lastScreenSize = new Vector2Int(-1, -1);
 
         public void Configure(GlitchRacerGame gameManager)
         {
@@ -77,6 +80,7 @@ namespace GlitchRacer
             GUI.matrix = Matrix4x4.Scale(new Vector3(uiScale, uiScale, 1f));
 
             EnsureStyles();
+            Rect safeRect = GetSafeAreaVirtualRect();
 
             DrawBackdrop();
 
@@ -109,24 +113,24 @@ namespace GlitchRacer
 
             if (game.State == GlitchRacerGame.SessionState.Playing)
             {
-                DrawControlHint();
+                DrawControlHint(safeRect);
             }
 
             if (game.State == GlitchRacerGame.SessionState.MainMenu)
             {
-                DrawMainMenu();
+                DrawMainMenu(safeRect);
             }
             else if (game.State == GlitchRacerGame.SessionState.Shop)
             {
-                DrawShop();
+                DrawShop(safeRect);
             }
             else if (game.State == GlitchRacerGame.SessionState.Settings)
             {
-                DrawSettings();
+                DrawSettings(safeRect);
             }
             else if (game.IsGameOver)
             {
-                DrawGameOver();
+                DrawGameOver(safeRect);
             }
         }
 
@@ -153,6 +157,8 @@ namespace GlitchRacer
             scaler.matchWidthOrHeight = 0.5f;
 
             canvasRoot.AddComponent<GraphicRaycaster>();
+            hudSafeAreaRoot = CreateSafeAreaRoot(canvasRoot.transform);
+            ApplySafeAreaToCanvas();
 
             CreateHudCard("BrandCard", new Vector2(24f, -24f), new Vector2(340f, 70f), new Color(0.01f, 0.03f, 0.06f, 0.78f), out RectTransform brandRect);
             CreateAccent(brandRect, new Vector2(3f, -3f), new Vector2(3f, 64f), new Color(0.08f, 0.95f, 1f, 0.78f));
@@ -194,6 +200,9 @@ namespace GlitchRacer
             ramLabelText = null;
             coinsLabelText = null;
             brandTitleText = null;
+            hudSafeAreaRoot = null;
+            lastSafeArea = new Rect(-1f, -1f, -1f, -1f);
+            lastScreenSize = new Vector2Int(-1, -1);
 
             for (int i = transform.childCount - 1; i >= 0; i--)
             {
@@ -243,7 +252,7 @@ namespace GlitchRacer
         private void CreateHudCard(string name, Vector2 anchoredPosition, Vector2 size, Color color, out RectTransform rect, bool rightAligned = false)
         {
             GameObject card = new GameObject(name, typeof(Image));
-            card.transform.SetParent(canvasRoot.transform, false);
+            card.transform.SetParent(hudSafeAreaRoot != null ? hudSafeAreaRoot : canvasRoot.transform, false);
             Image image = card.GetComponent<Image>();
             image.color = color;
 
@@ -309,6 +318,8 @@ namespace GlitchRacer
             {
                 return;
             }
+
+            ApplySafeAreaToCanvas();
 
             bool showHud = game.State == GlitchRacerGame.SessionState.Playing || game.State == GlitchRacerGame.SessionState.GameOver;
             canvasRoot.SetActive(showHud);
@@ -455,7 +466,7 @@ namespace GlitchRacer
         {
         }
 
-        private void DrawControlHint()
+        private void DrawControlHint(Rect safeRect)
         {
             if (RunnerPlayer.UseTouchControls)
             {
@@ -463,8 +474,7 @@ namespace GlitchRacer
             }
 
             string hint = GlitchRacerLocalization.ControlHint(RunnerPlayer.UseTouchControls, game.CurrentLanguage);
-
-            GUI.Label(new Rect(24f, vHeight - 52f, 900f, 30f), hint, labelStyle);
+            GUI.Label(new Rect(safeRect.x + 24f, safeRect.yMax - 52f, Mathf.Min(900f, safeRect.width - 48f), 30f), hint, labelStyle);
         }
 
         private void DrawDrugsOverlay()
@@ -500,67 +510,80 @@ namespace GlitchRacer
             GUI.color = Color.white;
         }
 
-        private void DrawMainMenu()
+        private void DrawMainMenu(Rect safeRect)
         {
-            float panelWidth = Mathf.Min(520f, vWidth * 0.95f);
-            Rect panel = new Rect(vWidth * 0.5f - panelWidth * 0.5f, 34f, panelWidth, vHeight - 68f);
+            float panelWidth = Mathf.Min(520f, safeRect.width * 0.95f);
+            Rect panel = new Rect(safeRect.center.x - panelWidth * 0.5f, safeRect.y + 24f, panelWidth, Mathf.Max(260f, safeRect.height - 48f));
             DrawPanelChrome(panel, new Color(0.01f, 0.02f, 0.04f, 0.88f), new Color(0.08f, 0.95f, 1f, 0.26f), new Color(1f, 0.24f, 0.72f, 0.1f));
-            float buttonY = Mathf.Min(panel.y + 372f, panel.yMax - 180f);
+            bool compact = panel.height < 620f;
+            float chipHeight = compact ? 38f : 44f;
+            float chipStep = compact ? 42f : 50f;
+            float buttonHeightPrimary = compact ? 48f : 54f;
+            float buttonHeightSecondary = 42f;
+            float buttonGap = compact ? 10f : 12f;
+            float buttonSectionHeight = buttonHeightPrimary + buttonGap + buttonHeightSecondary + buttonGap + buttonHeightSecondary;
 
             string language = game.CurrentLanguage;
             float contentY = panel.y + 22f;
 
             float taglineH = tinyStyle.CalcHeight(new GUIContent(GlitchRacerLocalization.BrandTagline(language)), panel.width - 56f);
             GUI.Label(new Rect(panel.x + 28f, contentY, panel.width - 56f, taglineH), GlitchRacerLocalization.BrandTagline(language), tinyStyle);
-            contentY += taglineH + 6f;
+            contentY += taglineH + (compact ? 4f : 6f);
 
             float titleH = heroStyle.CalcHeight(new GUIContent(GlitchRacerLocalization.GameTitle(language)), panel.width - 56f);
             GUI.Label(new Rect(panel.x + 28f, contentY, panel.width - 56f, titleH), GlitchRacerLocalization.GameTitle(language), heroStyle);
-            contentY += titleH + 12f;
+            contentY += titleH + (compact ? 8f : 12f);
 
             float descH = subStyle.CalcHeight(new GUIContent(GlitchRacerLocalization.MainMenuDescription(language)), panel.width - 56f);
             GUI.Label(new Rect(panel.x + 28f, contentY, panel.width - 56f, descH), GlitchRacerLocalization.MainMenuDescription(language), subStyle);
-            contentY += descH + 24f;
+            contentY += descH + (compact ? 14f : 24f);
 
-            DrawStatChip(new Rect(panel.x + 28f, contentY, panel.width - 56f, 44f), GlitchRacerLocalization.WalletLabel(language), GlitchRacerLocalization.WalletValue(game.Coins, language));
-            contentY += 50f;
-            DrawStatChip(new Rect(panel.x + 28f, contentY, panel.width - 56f, 44f), GlitchRacerLocalization.BestScore(language), Mathf.RoundToInt(game.BestScore).ToString("N0"));
-            contentY += 50f;
-            DrawStatChip(new Rect(panel.x + 28f, contentY, panel.width - 56f, 44f), GlitchRacerLocalization.BestDistance(language), GlitchRacerLocalization.Meters(Mathf.RoundToInt(game.BestDistance), language));
-            contentY += 50f;
-            DrawStatChip(new Rect(panel.x + 28f, contentY, panel.width - 56f, 44f), GlitchRacerLocalization.TotalDistance(language), GlitchRacerLocalization.Meters(Mathf.RoundToInt(game.TotalDistance), language));
-
-            if (contentY + 12f > buttonY) buttonY = contentY + 24f;
-
-            if (DrawActionButton(new Rect(panel.x + 28f, buttonY, panel.width - 56f, 54f), GlitchRacerLocalization.StartRun(language), true))
-            {
-                game.StartGame();
-            }
-
-            if (DrawActionButton(new Rect(panel.x + 28f, buttonY + 64f, panel.width - 56f, 42f), GlitchRacerLocalization.ShopUpgrades(language)))
-            {
-                game.OpenShop();
-            }
-
-            if (DrawActionButton(new Rect(panel.x + 28f, buttonY + 114f, panel.width - 56f, 42f), GlitchRacerLocalization.Settings(language)))
-            {
-                game.OpenSettings();
-            }
+            DrawStatChip(new Rect(panel.x + 28f, contentY, panel.width - 56f, chipHeight), GlitchRacerLocalization.WalletLabel(language), GlitchRacerLocalization.WalletValue(game.Coins, language));
+            contentY += chipStep;
+            DrawStatChip(new Rect(panel.x + 28f, contentY, panel.width - 56f, chipHeight), GlitchRacerLocalization.BestScore(language), Mathf.RoundToInt(game.BestScore).ToString("N0"));
+            contentY += chipStep;
+            DrawStatChip(new Rect(panel.x + 28f, contentY, panel.width - 56f, chipHeight), GlitchRacerLocalization.BestDistance(language), GlitchRacerLocalization.Meters(Mathf.RoundToInt(game.BestDistance), language));
+            contentY += chipStep;
+            DrawStatChip(new Rect(panel.x + 28f, contentY, panel.width - 56f, chipHeight), GlitchRacerLocalization.TotalDistance(language), GlitchRacerLocalization.Meters(Mathf.RoundToInt(game.TotalDistance), language));
 
             float formulaH1 = tinyStyle.CalcHeight(new GUIContent(GlitchRacerLocalization.RunPayout(language)), panel.width - 56f);
             float formulaH2 = tinyStyle.CalcHeight(new GUIContent(GlitchRacerLocalization.PayoutFormula(language)), panel.width - 56f);
             float formulaBoxH = formulaH1 + formulaH2 + 12f;
 
-            Rect formula = new Rect(panel.x + 28f, panel.yMax - formulaBoxH - 14f, panel.width - 56f, formulaBoxH);
-            DrawSoftCard(formula, new Color(1f, 1f, 1f, 0.04f));
-            GUI.Label(new Rect(formula.x + 14f, formula.y + 6f, formula.width - 28f, formulaH1), GlitchRacerLocalization.RunPayout(language), tinyStyle);
-            GUI.Label(new Rect(formula.x + 14f, formula.y + 6f + formulaH1 + 2f, formula.width - 28f, formulaH2), GlitchRacerLocalization.PayoutFormula(language), tinyStyle);
+            float formulaTop = panel.yMax - formulaBoxH - 14f;
+            float buttonY = formulaTop - buttonSectionHeight - (compact ? 10f : 16f);
+            buttonY = Mathf.Max(contentY + (compact ? 14f : 24f), buttonY);
+            bool showFormula = buttonY + buttonSectionHeight + (compact ? 10f : 16f) <= formulaTop;
+
+            if (DrawActionButton(new Rect(panel.x + 28f, buttonY, panel.width - 56f, buttonHeightPrimary), GlitchRacerLocalization.StartRun(language), true))
+            {
+                game.StartGame();
+            }
+
+            if (DrawActionButton(new Rect(panel.x + 28f, buttonY + buttonHeightPrimary + buttonGap, panel.width - 56f, buttonHeightSecondary), GlitchRacerLocalization.ShopUpgrades(language)))
+            {
+                game.OpenShop();
+            }
+
+            if (DrawActionButton(new Rect(panel.x + 28f, buttonY + buttonHeightPrimary + buttonGap + buttonHeightSecondary + buttonGap, panel.width - 56f, buttonHeightSecondary), GlitchRacerLocalization.Settings(language)))
+            {
+                game.OpenSettings();
+            }
+
+            if (showFormula)
+            {
+                Rect formula = new Rect(panel.x + 28f, formulaTop, panel.width - 56f, formulaBoxH);
+                DrawSoftCard(formula, new Color(1f, 1f, 1f, 0.04f));
+                GUI.Label(new Rect(formula.x + 14f, formula.y + 6f, formula.width - 28f, formulaH1), GlitchRacerLocalization.RunPayout(language), tinyStyle);
+                GUI.Label(new Rect(formula.x + 14f, formula.y + 6f + formulaH1 + 2f, formula.width - 28f, formulaH2), GlitchRacerLocalization.PayoutFormula(language), tinyStyle);
+            }
         }
 
-        private void DrawShop()
+        private void DrawShop(Rect safeRect)
         {
-            float shopWidth = Mathf.Min(560f, vWidth * 0.95f);
-            Rect panel = new Rect(vWidth * 0.5f - shopWidth * 0.5f, vHeight * 0.12f, shopWidth, vHeight * 0.76f);
+            float shopWidth = Mathf.Min(560f, safeRect.width * 0.95f);
+            float shopHeight = Mathf.Min(620f, safeRect.height * 0.84f);
+            Rect panel = new Rect(safeRect.center.x - shopWidth * 0.5f, safeRect.center.y - shopHeight * 0.5f, shopWidth, shopHeight);
             string language = game.CurrentLanguage;
             DrawPanel(panel, GlitchRacerLocalization.ShopTitle(language));
 
@@ -588,12 +611,12 @@ namespace GlitchRacer
             }
         }
 
-        private void DrawSettings()
+        private void DrawSettings(Rect safeRect)
         {
             string language = game.CurrentLanguage;
-            float panelWidth = Mathf.Min(480f, vWidth * 0.95f);
-            float panelHeight = Mathf.Min(400f, vHeight * 0.8f);
-            Rect panel = new Rect(vWidth * 0.5f - panelWidth * 0.5f, vHeight * 0.5f - panelHeight * 0.5f, panelWidth, panelHeight);
+            float panelWidth = Mathf.Min(480f, safeRect.width * 0.95f);
+            float panelHeight = Mathf.Min(400f, safeRect.height * 0.8f);
+            Rect panel = new Rect(safeRect.center.x - panelWidth * 0.5f, safeRect.center.y - panelHeight * 0.5f, panelWidth, panelHeight);
             DrawPanel(panel, GlitchRacerLocalization.Settings(language));
 
             float contentY = panel.y + 78f;
@@ -616,11 +639,12 @@ namespace GlitchRacer
             }
         }
 
-        private void DrawGameOver()
+        private void DrawGameOver(Rect safeRect)
         {
             string language = game.CurrentLanguage;
-            float panelWidth = Mathf.Min(520f, vWidth * 0.95f);
-            Rect panel = new Rect(vWidth * 0.5f - panelWidth * 0.5f, vHeight * 0.5f - 200f, panelWidth, 400f);
+            float panelWidth = Mathf.Min(520f, safeRect.width * 0.95f);
+            float panelHeight = Mathf.Min(400f, safeRect.height * 0.9f);
+            Rect panel = new Rect(safeRect.center.x - panelWidth * 0.5f, safeRect.center.y - panelHeight * 0.5f, panelWidth, panelHeight);
             DrawPanel(panel, GlitchRacerLocalization.SystemFailure(language));
 
             float contentY = panel.y + 76f;
@@ -692,8 +716,8 @@ namespace GlitchRacer
         private void DrawStatChip(Rect rect, string label, string value)
         {
             DrawSoftCard(rect, new Color(1f, 1f, 1f, 0.045f));
-            GUI.Label(new Rect(rect.x + 14f, rect.y + 6f, 180f, 18f), label, tinyStyle);
-            GUI.Label(new Rect(rect.x + 14f, rect.y + 21f, rect.width - 28f, 18f), value, upgradeTitleStyle);
+            GUI.Label(new Rect(rect.x + 14f, rect.y + 4f, rect.width - 28f, 16f), label, tinyStyle);
+            GUI.Label(new Rect(rect.x + 14f, rect.y + 18f, rect.width - 28f, rect.height - 18f), value, upgradeTitleStyle);
         }
 
         private bool DrawActionButton(Rect rect, string text, bool primary = false)
@@ -829,6 +853,56 @@ namespace GlitchRacer
             panelStyle = new GUIStyle(GUI.skin.box);
             panelStyle.normal.background = null;
             panelStyle.border = new RectOffset(0, 0, 0, 0);
+        }
+
+        private RectTransform CreateSafeAreaRoot(Transform parent)
+        {
+            GameObject root = new GameObject("HudSafeArea");
+            root.transform.SetParent(parent, false);
+            RectTransform rect = root.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            return rect;
+        }
+
+        private void ApplySafeAreaToCanvas()
+        {
+            if (hudSafeAreaRoot == null)
+            {
+                return;
+            }
+
+            Rect safeArea = Screen.safeArea;
+            Vector2Int screenSize = new Vector2Int(Screen.width, Screen.height);
+            if (safeArea == lastSafeArea && screenSize == lastScreenSize)
+            {
+                return;
+            }
+
+            lastSafeArea = safeArea;
+            lastScreenSize = screenSize;
+
+            float width = Mathf.Max(1f, Screen.width);
+            float height = Mathf.Max(1f, Screen.height);
+            Vector2 anchorMin = new Vector2(safeArea.xMin / width, safeArea.yMin / height);
+            Vector2 anchorMax = new Vector2(safeArea.xMax / width, safeArea.yMax / height);
+
+            hudSafeAreaRoot.anchorMin = anchorMin;
+            hudSafeAreaRoot.anchorMax = anchorMax;
+            hudSafeAreaRoot.offsetMin = Vector2.zero;
+            hudSafeAreaRoot.offsetMax = Vector2.zero;
+        }
+
+        private Rect GetSafeAreaVirtualRect()
+        {
+            Rect safeArea = Screen.safeArea;
+            return new Rect(
+                safeArea.x / uiScale,
+                safeArea.y / uiScale,
+                safeArea.width / uiScale,
+                safeArea.height / uiScale);
         }
     }
 }
