@@ -453,7 +453,7 @@ namespace GlitchRacer
                 }
             }
 
-            return null;
+            return Shader.Find("UI/Default");
         }
 
         private static Material CreateFxMaterial()

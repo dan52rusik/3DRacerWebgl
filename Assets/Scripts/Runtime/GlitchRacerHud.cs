@@ -31,6 +31,7 @@ namespace GlitchRacer
         private GUIStyle metricStyle;
         private GUIStyle upgradeTitleStyle;
         private GUIStyle upgradeBodyStyle;
+        private Font runtimeUiFont;
 
         public void Configure(GlitchRacerGame gameManager)
         {
@@ -49,6 +50,7 @@ namespace GlitchRacer
             fillTexture.SetPixel(0, 0, Color.white);
             fillTexture.Apply();
             fillTexture.hideFlags = HideFlags.HideAndDontSave;
+            runtimeUiFont = Resources.Load<Font>("Fonts/Roboto-Regular");
         }
 
         private void OnDestroy()
@@ -275,7 +277,9 @@ namespace GlitchRacer
             GameObject textObj = new GameObject(name, typeof(Text));
             textObj.transform.SetParent(parent, false);
             text = textObj.GetComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = runtimeUiFont != null
+                ? runtimeUiFont
+                : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             text.text = initialText;
             text.fontSize = fontSize;
             text.fontStyle = FontStyle.Bold;
@@ -715,10 +719,13 @@ namespace GlitchRacer
                 return;
             }
 
+            Font customFont = Resources.Load<Font>("Fonts/Roboto-Regular");
+
             labelStyle = new GUIStyle(GUI.skin.label)
             {
                 fontSize = 22,
-                fontStyle = FontStyle.Bold
+                fontStyle = FontStyle.Bold,
+                font = customFont
             };
             labelStyle.normal.textColor = Color.white;
 

@@ -17,6 +17,7 @@ namespace GlitchRacer
         private Material cachedGlowMaterial;
         private Texture2D generatedGlowTexture;
         private Texture2D companyLogoTexture;
+        private Texture2D processedCompanyLogoTexture;
         private Material companyLogoMaterial;
         private GlitchRacerGame game;
         private float nextSpawnZ;
@@ -1249,9 +1250,10 @@ namespace GlitchRacer
                 // Fallback если забыли назначить в инспекторе
                 Shader shader = FindRuntimeShader(
                     "Universal Render Pipeline/Particles/Unlit",
+                    "Sprites/Default",
+                    "Unlit/Texture",
                     "Universal Render Pipeline/Unlit",
-                    "Unlit/Color",
-                    "Sprites/Default");
+                    "Unlit/Color");
                 if (shader == null)
                 {
                     Debug.LogError("TrackSegmentSpawner: glow shader not found. Add a fallback shader to Always Included Shaders.");
@@ -1421,10 +1423,16 @@ namespace GlitchRacer
                 companyLogoTexture = Resources.Load<Texture2D>("logo overheat");
             }
 
+            if (processedCompanyLogoTexture == null && companyLogoTexture != null)
+            {
+                processedCompanyLogoTexture = CreateTransparentLogoTexture(companyLogoTexture);
+            }
+
             Shader shader = FindRuntimeShader(
+                "Sprites/Default",
+                "Unlit/Texture",
                 "Universal Render Pipeline/Unlit",
-                "Unlit/Color",
-                "Sprites/Default");
+                "Unlit/Color");
 
             if (shader == null)
             {
@@ -1432,22 +1440,90 @@ namespace GlitchRacer
             }
 
             companyLogoMaterial = new Material(shader);
-            if (companyLogoTexture != null)
+            Texture2D logoTexture = processedCompanyLogoTexture != null ? processedCompanyLogoTexture : companyLogoTexture;
+            if (logoTexture != null)
             {
                 if (companyLogoMaterial.HasProperty("_BaseMap"))
                 {
-                    companyLogoMaterial.SetTexture("_BaseMap", companyLogoTexture);
+                    companyLogoMaterial.SetTexture("_BaseMap", logoTexture);
                     companyLogoMaterial.SetColor("_BaseColor", Color.white);
                 }
                 
                 if (companyLogoMaterial.HasProperty("_MainTex"))
                 {
-                    companyLogoMaterial.SetTexture("_MainTex", companyLogoTexture);
+                    companyLogoMaterial.SetTexture("_MainTex", logoTexture);
                     companyLogoMaterial.SetColor("_Color", Color.white);
                 }
             }
 
+            companyLogoMaterial.renderQueue = 3000;
+            if (companyLogoMaterial.HasProperty("_Surface"))
+            {
+                companyLogoMaterial.SetFloat("_Surface", 1f);
+            }
+
+            if (companyLogoMaterial.HasProperty("_Blend"))
+            {
+                companyLogoMaterial.SetFloat("_Blend", 0f);
+            }
+
+            if (companyLogoMaterial.HasProperty("_SrcBlend"))
+            {
+                companyLogoMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            }
+
+            if (companyLogoMaterial.HasProperty("_DstBlend"))
+            {
+                companyLogoMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            }
+
+            if (companyLogoMaterial.HasProperty("_ZWrite"))
+            {
+                companyLogoMaterial.SetInt("_ZWrite", 0);
+            }
+
             return companyLogoMaterial;
+        }
+
+        private static Texture2D CreateTransparentLogoTexture(Texture2D source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                Color[] sourcePixels = source.GetPixels();
+                Texture2D texture = new Texture2D(source.width, source.height, TextureFormat.RGBA32, false);
+                texture.wrapMode = TextureWrapMode.Clamp;
+                texture.filterMode = FilterMode.Bilinear;
+                texture.hideFlags = HideFlags.HideAndDontSave;
+
+                for (int i = 0; i < sourcePixels.Length; i++)
+                {
+                    Color pixel = sourcePixels[i];
+                    float whiteness = (pixel.r + pixel.g + pixel.b) / 3f;
+                    if (whiteness > 0.9f)
+                    {
+                        pixel.a = 0f;
+                    }
+                    else
+                    {
+                        pixel.a = 1f;
+                    }
+
+                    sourcePixels[i] = pixel;
+                }
+
+                texture.SetPixels(sourcePixels);
+                texture.Apply();
+                return texture;
+            }
+            catch
+            {
+                return source;
+            }
         }
 
         private void OnDestroy()
@@ -1470,6 +1546,12 @@ namespace GlitchRacer
                 companyLogoMaterial = null;
             }
 
+            if (processedCompanyLogoTexture != null && processedCompanyLogoTexture != companyLogoTexture)
+            {
+                Destroy(processedCompanyLogoTexture);
+                processedCompanyLogoTexture = null;
+            }
+
             // companyLogoTexture is a project asset loaded from Resources, so we don't Destroy() it manually.
 
             foreach (Material material in solidMaterialPool.Values)
@@ -1483,7 +1565,7 @@ namespace GlitchRacer
             solidMaterialPool.Clear();
         }
 
-        private static Shader FindRuntimeShader(params string[] shaderNames)
+        private Shader FindRuntimeShader(params string[] shaderNames)
         {
             for (int i = 0; i < shaderNames.Length; i++)
             {
@@ -1494,7 +1576,7 @@ namespace GlitchRacer
                 }
             }
 
-            return null;
+            return solidTemplate != null ? solidTemplate.shader : Shader.Find("UI/Default");
         }
 
         private static void RemoveCollider(GameObject target)
