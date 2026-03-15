@@ -59,7 +59,11 @@ namespace GlitchRacer
         public int LastRunCoinsReward { get; private set; }
         public bool HasUsedRevive { get; private set; }
         public SessionState State { get; private set; }
-        public string CurrentLanguage => GlitchRacerLocalization.NormalizeLanguage(saveData.languageCode);
+#if Localization_yg
+        public string CurrentLanguage => GlitchRacerLocalization.NormalizeLanguage(YG2.lang);
+#else
+        public string CurrentLanguage => GlitchRacerLocalization.NormalizeLanguage(saveData?.languageCode ?? "en");
+#endif
         public bool IsGameOver => State == SessionState.GameOver;
         public bool IsMenuVisible => State == SessionState.MainMenu || State == SessionState.Shop || State == SessionState.Settings;
         public bool IsInputEnabled => State == SessionState.Playing;
@@ -401,19 +405,10 @@ namespace GlitchRacer
 
         private void InitializeLanguage()
         {
-            string language = string.IsNullOrEmpty(saveData.languageCode)
-#if Localization_yg
-                ? GlitchRacerLocalization.NormalizeLanguage(YG2.lang)
-#else
-                ? "en"
-#endif
-                : GlitchRacerLocalization.NormalizeLanguage(saveData.languageCode);
-
-            saveData.languageCode = language;
-#if Localization_yg
-            if (YG2.lang != language)
+#if !Localization_yg
+            if (string.IsNullOrEmpty(saveData?.languageCode))
             {
-                YG2.SwitchLanguage(language);
+                if (saveData != null) saveData.languageCode = "en";
             }
 #endif
         }
@@ -425,21 +420,22 @@ namespace GlitchRacer
             if (YG2.lang != normalized)
             {
                 YG2.SwitchLanguage(normalized);
-                return;
             }
-#endif
+#else
             HandleLanguageSwitched(normalized);
+#endif
         }
 
         private void HandleLanguageSwitched(string language)
         {
+#if !Localization_yg
             string normalized = GlitchRacerLocalization.NormalizeLanguage(language);
             if (saveData != null)
             {
                 saveData.languageCode = normalized;
                 SaveProgress();
             }
-
+#endif
             hud?.RefreshLocalization();
         }
 
