@@ -1,8 +1,5 @@
 using UnityEngine;
 using YG;
-#if PlayerStats_yg
-using YG;
-#endif
 
 namespace GlitchRacer
 {
@@ -24,6 +21,13 @@ namespace GlitchRacer
             Shop,
             Settings,
             GameOver
+        }
+
+        private enum PendingPostGameOverAction
+        {
+            None,
+            RestartRun,
+            ReturnToMainMenu
         }
 
         [Header("Run Economy")]
@@ -91,6 +95,7 @@ namespace GlitchRacer
         private GlitchType activeGlitch;
         private float chapterRushTimer;
         private float nextChapterDistance;
+        private PendingPostGameOverAction pendingPostGameOverAction;
 
         // FIX: Configure теперь НЕ вызывает EnterMainMenu().
         // Bootstrap сам вызовет EnterMainMenu() после Configure(), когда все ссылки уже заданы.
@@ -112,6 +117,10 @@ namespace GlitchRacer
             YG2.onGetSDKData += HandleCloudSaveLoaded;
             YG2.onRewardAdv += OnRewardAdv;
 #endif
+#if InterstitialAdv_yg
+            YG2.onCloseInterAdv += HandleInterstitialClosed;
+            YG2.onErrorInterAdv += HandleInterstitialError;
+#endif
 #if Localization_yg
             YG2.onSwitchLang += HandleLanguageSwitched;
 #endif
@@ -126,6 +135,10 @@ namespace GlitchRacer
             YG2.onGetSDKData -= HandleCloudSaveLoaded;
             YG2.onRewardAdv -= OnRewardAdv;
 #endif
+#if InterstitialAdv_yg
+            YG2.onCloseInterAdv -= HandleInterstitialClosed;
+            YG2.onErrorInterAdv -= HandleInterstitialError;
+#endif
 #if Localization_yg
             YG2.onSwitchLang -= HandleLanguageSwitched;
 #endif
@@ -137,6 +150,16 @@ namespace GlitchRacer
             {
                 ReviveFromAd();
             }
+        }
+
+        private void HandleInterstitialClosed()
+        {
+            ExecutePendingPostGameOverAction();
+        }
+
+        private void HandleInterstitialError()
+        {
+            ExecutePendingPostGameOverAction();
         }
 
         private void Update()
@@ -191,6 +214,7 @@ namespace GlitchRacer
 
             State = SessionState.Playing;
             HasUsedRevive = true;
+            pendingPostGameOverAction = PendingPostGameOverAction.None;
             CurrentRam = maxRam;
             glitchTimer = 0f;
             activeGlitch = GlitchType.None;
@@ -254,6 +278,16 @@ namespace GlitchRacer
         public void OpenSettings()
         {
             State = SessionState.Settings;
+        }
+
+        public void RequestRestartFromGameOver()
+        {
+            RequestPostGameOverAction(PendingPostGameOverAction.RestartRun);
+        }
+
+        public void RequestReturnToMainMenuFromGameOver()
+        {
+            RequestPostGameOverAction(PendingPostGameOverAction.ReturnToMainMenu);
         }
 
         public void CloseOverlayToMenu()
@@ -323,6 +357,7 @@ namespace GlitchRacer
             activeGlitch = GlitchType.None;
             chapterRushTimer = 0f;
             nextChapterDistance = chapterDistanceInterval;
+            pendingPostGameOverAction = PendingPostGameOverAction.None;
         }
 
         private void SimulateRun()
@@ -388,14 +423,49 @@ namespace GlitchRacer
         {
             State = SessionState.GameOver;
             audioSynth?.PlayGameOverSound();
+            pendingPostGameOverAction = PendingPostGameOverAction.None;
             LastRunCoinsReward = CalculateCoinsReward();
             saveData.coins += LastRunCoinsReward;
             saveData.bestScore = Mathf.Max(saveData.bestScore, Score);
             saveData.bestDistance = Mathf.Max(saveData.bestDistance, CurrentDistance);
             saveData.totalDistance += CurrentDistance;
             SaveProgress();
+        }
 
-            YG2.InterstitialAdvShow();
+        private void RequestPostGameOverAction(PendingPostGameOverAction action)
+        {
+            if (State != SessionState.GameOver)
+            {
+                return;
+            }
+
+            pendingPostGameOverAction = action;
+
+#if InterstitialAdv_yg
+            if (YG2.isTimerAdvCompleted)
+            {
+                YG2.InterstitialAdvShow();
+                return;
+            }
+#endif
+
+            ExecutePendingPostGameOverAction();
+        }
+
+        private void ExecutePendingPostGameOverAction()
+        {
+            PendingPostGameOverAction action = pendingPostGameOverAction;
+            pendingPostGameOverAction = PendingPostGameOverAction.None;
+
+            switch (action)
+            {
+                case PendingPostGameOverAction.RestartRun:
+                    StartGame();
+                    break;
+                case PendingPostGameOverAction.ReturnToMainMenu:
+                    EnterMainMenu();
+                    break;
+            }
         }
 
         private void SaveProgress()

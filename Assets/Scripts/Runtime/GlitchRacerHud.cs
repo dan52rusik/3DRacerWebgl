@@ -676,12 +676,12 @@ namespace GlitchRacer
 
             if (DrawActionButton(new Rect(panel.x + 24f, buttonY + 50f, (panel.width - 60f) * 0.5f, 42f), GlitchRacerLocalization.RunAgain(language)))
             {
-                game.StartGame();
+                game.RequestRestartFromGameOver();
             }
 
             if (DrawActionButton(new Rect(panel.center.x + 6f, buttonY + 50f, (panel.width - 60f) * 0.5f, 42f), GlitchRacerLocalization.MainMenu(language)))
             {
-                game.EnterMainMenu();
+                game.RequestReturnToMainMenuFromGameOver();
             }
         }
 
